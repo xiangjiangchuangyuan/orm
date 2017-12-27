@@ -1,8 +1,9 @@
 package com.xjcy.orm.core;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -24,16 +25,16 @@ public class ReflectJPA
 		if (tableAnnotation != null)
 		{
 			TableStruct table = new TableStruct(tableAnnotation.name());
-			table.setGenerateKey(getSpecialColumn(cla, Id.class));
-			table.setColumnMethods(getColumnMethods(cla));
+			explanColumns(table, cla);
 			return table;
 		}
 		return null;
 	}
 
-	static Map<String, Method> getColumnMethods(Class<?> cla)
+	private static void explanColumns(TableStruct table, Class<?> cla)
 	{
 		Map<String, Method> columns = new HashMap<>();
+		List<String> primaryKeys = new ArrayList<>();
 		try
 		{
 			Method[] methods = cla.getDeclaredMethods();
@@ -42,40 +43,31 @@ public class ReflectJPA
 			{
 				colName = getColumnName(method);
 				if (colName != null && !"".equals(colName))
+				{
 					columns.put(colName, method);
+					Id id = method.getAnnotation(Id.class);
+					if (id != null)
+					{
+						primaryKeys.add(colName);
+						if (id.auto()) 
+							table.setGenerateKey(colName);
+					}
+				}
 			}
+			table.setColumnMethods(columns);
+			table.setPrimaryKeys(primaryKeys);
 		}
 		catch (Exception e)
 		{
 			logger.error("获取所有的表字段失败", e);
 		}
-		return columns;
-	}
-
-	private static <T extends Annotation> String getSpecialColumn(Class<?> cla, Class<T> annotationClass)
-	{
-		Method[] methods = cla.getDeclaredMethods();
-		String colName = null;
-		T t;
-		for (Method method : methods)
-		{
-			t = method.getAnnotation(annotationClass);
-			if (t != null)
-			{
-				colName = getColumnName(method);
-				break;
-			}
-		}
-		return colName;
 	}
 
 	private static String getColumnName(Method method)
 	{
-		if (method == null)
-			return null;
+		if (method == null) return null;
 		Column col = method.getAnnotation(Column.class);
-		if (col != null)
-			return col.name();
+		if (col != null) return col.name();
 		return null;
 	}
 }

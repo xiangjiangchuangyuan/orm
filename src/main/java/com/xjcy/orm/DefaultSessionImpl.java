@@ -13,6 +13,7 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Logger;
 
+import com.xjcy.orm.core.FieldUtils;
 import com.xjcy.orm.core.ObjectUtils;
 import com.xjcy.orm.core.SqlCache;
 import com.xjcy.orm.event.SqlSession;
@@ -156,7 +157,7 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession
 			if (rs.next())
 			{
 				result = rs.getInt(1);
-				struct.setPrimaryKey(result);
+				FieldUtils.setValue(obj, struct.getGenerageKey(), result);
 			}
 			rs.close();
 		}
@@ -195,7 +196,7 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession
 	@Override
 	protected boolean buildSaveOrUpdate(Connection conn, TableStruct struct, Object obj) throws SQLException
 	{
-		if (struct.getPrimaryKey(obj) != null)
+		if (struct.hasPrimaryKey(obj))
 		{
 			logger.debug("发现主键有值，定义为update");
 			return buildUpdate(conn, struct, obj, true);

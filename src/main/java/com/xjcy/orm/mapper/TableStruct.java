@@ -3,6 +3,7 @@ package com.xjcy.orm.mapper;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,10 +20,7 @@ public class TableStruct
 	private Map<String, Method> columnMethods;
 	private Map<String, Object> columnObjects;
 	private Map<Integer, Object> sqlMap = new HashMap<>();
-
-	private Object primaryKey;
-
-	private Object currentObject;
+	private List<String> primaryKeys;
 
 	public TableStruct(String name)
 	{
@@ -34,16 +32,16 @@ public class TableStruct
 		return this.name;
 	}
 
-	public Object getPrimaryKey()
+	public List<String> getPrimaryKeys()
 	{
-		return this.primaryKey;
+		return this.primaryKeys;
 	}
 
-	public Object getPrimaryKey(Object obj)
+	public void setPrimaryKeys(List<String> pks)
 	{
-		return FieldUtils.getValue(obj, this.generateKey);
+		this.primaryKeys = pks;
 	}
-
+	
 	public String getGenerageKey()
 	{
 		return this.generateKey;
@@ -59,31 +57,32 @@ public class TableStruct
 		this.generateKey = column;
 	}
 
-	public void setPrimaryKey(Object result)
+	public boolean hasPrimaryKey(Object obj)
 	{
-		if (result != null && generateKey != null)
+		if(primaryKeys == null || primaryKeys.isEmpty())
+			return false;
+		for (String key : primaryKeys)
 		{
-			FieldUtils.setValue(this.currentObject, generateKey, result);
+			if( FieldUtils.getValue(obj, key) != null)
+				return true;
 		}
+		return false;
 	}
 
 	public void setColumnMethods(Map<String, Method> methods)
 	{
 		this.columnMethods = methods;
 	}
-
+	
 	public void setColumns(Object obj, SQLType sqlType) throws SQLException
 	{
 		if (this.columnMethods == null || this.columnMethods.isEmpty())
 			return;
-		this.currentObject = obj;
 		columnObjects = new HashMap<>();
 		Set<String> columnNames = this.columnMethods.keySet();
 		for (String colName : columnNames)
 		{
 			columnObjects.put(colName, FieldUtils.getValue(obj, this.columnMethods.get(colName)));
-			if (colName.equals(generateKey))
-				this.primaryKey = columnObjects.get(colName);
 		}
 		switch (sqlType)
 		{
@@ -91,17 +90,17 @@ public class TableStruct
 			buildInsertMap();
 			break;
 		case UPDATE:
-			if (this.primaryKey == null)
+			if (this.primaryKeys == null || this.primaryKeys.isEmpty())
 				throw new SQLException("获取对象" + obj.getClass().getName() + "的主键失败");
 			buildUpdateMap(false);
 			break;
 		case UPDATENOTNULL:
-			if (this.primaryKey == null)
+			if (this.primaryKeys == null || this.primaryKeys.isEmpty())
 				throw new SQLException("获取对象" + obj.getClass().getName() + "的主键失败");
 			buildUpdateMap(true);
 			break;
 		case DELETE:
-			if (this.primaryKey == null)
+			if (this.primaryKeys == null || this.primaryKeys.isEmpty())
 				throw new SQLException("获取对象" + obj.getClass().getName() + "的主键失败");
 			buildDeleteMap();
 			break;
@@ -163,7 +162,7 @@ public class TableStruct
 				for (String key : keys)
 				{
 					obj = columnObjects.get(key);
-					if (!key.equals(generateKey) && obj != null)
+					if (primaryKeys != null && !primaryKeys.contains(key) && obj != null)
 					{
 						sql1.append(key + "=?,");
 						sqlMap.put(j, obj);
@@ -175,7 +174,7 @@ public class TableStruct
 			{
 				for (String key : keys)
 				{
-					if (!key.equals(generateKey))
+					if (primaryKeys != null && !primaryKeys.contains(key))
 					{
 						sql1.append(key + "=?,");
 						sqlMap.put(j, columnObjects.get(key));
@@ -184,8 +183,18 @@ public class TableStruct
 				}
 			}
 			sql1.deleteCharAt(sql1.length() - 1);
-			StringBuffer sql2 = new StringBuffer(generateKey + " = ?");
-			sqlMap.put(j, columnObjects.get(generateKey));
+			StringBuffer sql2 = new StringBuffer();
+			if(primaryKeys != null && !primaryKeys.isEmpty())
+			{
+				for (String key : keys)
+				{
+					sql2.append(key + " = ? AND ");
+					sqlMap.put(j, columnObjects.get(key));
+					j++;
+				}
+			}
+			if(sql2.length() > 0)
+				sql2.delete(sql2.length() - 4, sql2.length());
 			String sql = "update " + this.name + sql1.toString() + " where " + sql2.toString();
 			if (logger.isDebugEnabled())
 				logger.debug("构造完成的SQL => " + sql);
@@ -210,7 +219,7 @@ public class TableStruct
 			for (String key : keys)
 			{
 				obj = columnObjects.get(key);
-				if (!key.equals(this.generateKey) && obj != null)
+				if (obj != null)
 				{
 					sql1.append(key + ",");
 					sql2.append("?,");

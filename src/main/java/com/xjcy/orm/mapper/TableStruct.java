@@ -186,7 +186,7 @@ public class TableStruct
 			StringBuffer sql2 = new StringBuffer();
 			if(primaryKeys != null && !primaryKeys.isEmpty())
 			{
-				for (String key : keys)
+				for (String key : primaryKeys)
 				{
 					sql2.append(key + " = ? AND ");
 					sqlMap.put(j, columnObjects.get(key));

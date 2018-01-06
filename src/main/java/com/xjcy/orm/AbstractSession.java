@@ -17,6 +17,7 @@ import com.xjcy.orm.core.ReflectJPA;
 import com.xjcy.orm.core.SqlCache;
 import com.xjcy.orm.event.SqlTranction;
 import com.xjcy.orm.mapper.PageInfo;
+import com.xjcy.orm.mapper.PageParamater;
 import com.xjcy.orm.mapper.ProcParamater;
 import com.xjcy.orm.mapper.ProcParamater.ParameterType;
 import com.xjcy.orm.mapper.TableStruct;
@@ -219,6 +220,33 @@ public abstract class AbstractSession
 			newObj[objects.length + 1] = pageSize;
 			page.setResult(Query(t, sql + " LIMIT ?,?", newObj));
 			page.setTotal(Long.parseLong(getSingle("select count(1) from (" + sql + ") a", objects).toString()));
+		}
+		return page;
+	}
+	
+	public <T> PageInfo Query(Class<T> t, PageParamater paras)
+	{
+		return Query(t, paras, NULL);
+	}
+	
+	public <T> PageInfo Query(Class<T> t, PageParamater paras, Object... objects)
+	{
+		int pageSize = paras.pageSize();
+		PageInfo page = new PageInfo(paras.pageNum(), pageSize);
+		if (ObjectUtils.isEmpty(objects))
+		{
+			page.setResult(Query(t, paras.selectSql() + " LIMIT ?,?", page.getStartRow(), pageSize));
+			page.setTotal(Long.parseLong(getSingle(paras.countSql()).toString()));
+		}
+		else
+		{
+			Object[] newObj = new Object[objects.length + 2];
+			System.arraycopy(objects, 0, newObj, 0, objects.length);
+			// 赋值LIMIT参数
+			newObj[objects.length] = page.getStartRow();
+			newObj[objects.length + 1] = pageSize;
+			page.setResult(Query(t, paras.selectSql() + " LIMIT ?,?", newObj));
+			page.setTotal(Long.parseLong(getSingle(paras.countSql()).toString()));
 		}
 		return page;
 	}

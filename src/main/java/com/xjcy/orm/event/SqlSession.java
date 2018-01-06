@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.xjcy.orm.mapper.PageInfo;
+import com.xjcy.orm.mapper.PageParamater;
 import com.xjcy.orm.mapper.ProcParamater;
 
 public interface SqlSession
@@ -16,6 +17,8 @@ public interface SqlSession
 	<T> PageInfo queryByPage(Class<T> t, int pageNum, int pageSize, String sql);
 
 	<T> PageInfo queryByPage(Class<T> t, int pageNum, int pageSize, String sql, Object... objects);
+
+	<T> PageInfo Query(Class<T> t, PageParamater paras, Object... objects);
 
 	boolean RunProcdure(String sql);
 

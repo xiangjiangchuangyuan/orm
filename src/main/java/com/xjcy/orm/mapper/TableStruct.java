@@ -128,7 +128,7 @@ public class TableStruct
 				obj = columnObjects.get(key);
 				if (obj != null)
 				{
-					sql1.append(key + "=? AND ");
+					sql1.append("`" + key + "`=? AND ");
 					sqlMap.put(j, obj);
 					j++;
 				}
@@ -164,7 +164,7 @@ public class TableStruct
 					obj = columnObjects.get(key);
 					if (primaryKeys != null && !primaryKeys.contains(key) && obj != null)
 					{
-						sql1.append(key + "=?,");
+						sql1.append("`" + key + "`=?,");
 						sqlMap.put(j, obj);
 						j++;
 					}
@@ -176,7 +176,7 @@ public class TableStruct
 				{
 					if (primaryKeys != null && !primaryKeys.contains(key))
 					{
-						sql1.append(key + "=?,");
+						sql1.append("`" + key + "`=?,");
 						sqlMap.put(j, columnObjects.get(key));
 						j++;
 					}
@@ -188,7 +188,7 @@ public class TableStruct
 			{
 				for (String key : primaryKeys)
 				{
-					sql2.append(key + " = ? AND ");
+					sql2.append("`" + key + "`=? AND ");
 					sqlMap.put(j, columnObjects.get(key));
 					j++;
 				}
@@ -221,7 +221,7 @@ public class TableStruct
 				obj = columnObjects.get(key);
 				if (obj != null)
 				{
-					sql1.append(key + ",");
+					sql1.append("`" + key + "`,");
 					sql2.append("?,");
 					sqlMap.put(j, obj);
 					j++;

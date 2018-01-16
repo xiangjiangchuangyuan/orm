@@ -95,8 +95,6 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession
 	{
 		long start = getNow();
 		ResultSet rs = ObjectUtils.buildResultSet(conn, sql, objects);
-		if (rs.getMetaData().getColumnCount() != 2)
-			throw new SQLException("字典查询只能包含两列字段");
 		Map<String, Object> map = new HashMap<>();
 		while (rs.next())
 		{

@@ -14,11 +14,7 @@ public interface SqlSession
 
 	void close(SqlTranction tran);
 
-	<T> PageInfo queryByPage(Class<T> t, int pageNum, int pageSize, String sql);
-
-	<T> PageInfo queryByPage(Class<T> t, int pageNum, int pageSize, String sql, Object... objects);
-
-	<T> PageInfo Query(Class<T> t, PageParamater paras, Object... objects);
+	<T> PageInfo<T> Query(Class<T> t, PageParamater paras, Object... objects);
 
 	boolean RunProcdure(String sql);
 

@@ -2,7 +2,7 @@ package com.xjcy.orm.mapper;
 
 import java.util.List;
 
-public class PageInfo
+public class PageInfo<T>
 {
 	private int pageNum;
 	private int pageSize;
@@ -10,7 +10,7 @@ public class PageInfo
 	private int endRow;
 	private long total;
 	private int pages;
-	private List<?> result;
+	private List<T> result;
 
 	public PageInfo(int pageNum, int pageSize)
 	{
@@ -20,12 +20,12 @@ public class PageInfo
 		this.endRow = pageNum * pageSize;
 	}
 
-	public List<?> getResult()
+	public List<T> getResult()
 	{
 		return result;
 	}
 
-	public void setResult(List<?> result)
+	public void setResult(List<T> result)
 	{
 		this.result = result;
 	}

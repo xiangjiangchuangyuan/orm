@@ -198,45 +198,19 @@ public abstract class AbstractSession
 
 	protected abstract <T> List<T> buildQueryList(String sql, Connection conn, Object... objects) throws SQLException;
 
-	public <T> PageInfo queryByPage(Class<T> t, int pageNum, int pageSize, String sql)
-	{
-		return queryByPage(t, pageNum, pageSize, sql, NULL);
-	}
-
-	public <T> PageInfo queryByPage(Class<T> t, int pageNum, int pageSize, String sql, Object... objects)
-	{
-		PageInfo page = new PageInfo(pageNum, pageSize);
-		if (ObjectUtils.isEmpty(objects))
-		{
-			page.setResult(Query(t, sql + " LIMIT ?,?", page.getStartRow(), pageSize));
-			page.setTotal(Long.parseLong(getSingle("select count(1) from (" + sql + ") a").toString()));
-		}
-		else
-		{
-			Object[] newObj = new Object[objects.length + 2];
-			System.arraycopy(objects, 0, newObj, 0, objects.length);
-			// 赋值LIMIT参数
-			newObj[objects.length] = page.getStartRow();
-			newObj[objects.length + 1] = pageSize;
-			page.setResult(Query(t, sql + " LIMIT ?,?", newObj));
-			page.setTotal(Long.parseLong(getSingle("select count(1) from (" + sql + ") a", objects).toString()));
-		}
-		return page;
-	}
-	
-	public <T> PageInfo Query(Class<T> t, PageParamater paras)
+	public <T> PageInfo<T> Query(Class<T> t, PageParamater paras)
 	{
 		return Query(t, paras, NULL);
 	}
 	
-	public <T> PageInfo Query(Class<T> t, PageParamater paras, Object... objects)
+	public <T> PageInfo<T> Query(Class<T> t, PageParamater paras, Object... objects)
 	{
-		int pageSize = paras.pageSize();
-		PageInfo page = new PageInfo(paras.pageNum(), pageSize);
+		int pageSize = paras.getPageSize();
+		PageInfo<T> page = new PageInfo<T>(paras.getPageNum(), pageSize);
 		if (ObjectUtils.isEmpty(objects))
 		{
-			page.setResult(Query(t, paras.selectSql() + " LIMIT ?,?", page.getStartRow(), pageSize));
-			page.setTotal(Long.parseLong(getSingle(paras.countSql()).toString()));
+			page.setResult(Query(t, paras.getSelectSql() + " LIMIT ?,?", page.getStartRow(), pageSize));
+			page.setTotal(Long.parseLong(getSingle(paras.getCountSql()).toString()));
 		}
 		else
 		{
@@ -245,8 +219,8 @@ public abstract class AbstractSession
 			// 赋值LIMIT参数
 			newObj[objects.length] = page.getStartRow();
 			newObj[objects.length + 1] = pageSize;
-			page.setResult(Query(t, paras.selectSql() + " LIMIT ?,?", newObj));
-			page.setTotal(Long.parseLong(getSingle(paras.countSql()).toString()));
+			page.setResult(Query(t, paras.getSelectSql() + " LIMIT ?,?", newObj));
+			page.setTotal(Long.parseLong(getSingle(paras.getCountSql(), objects).toString()));
 		}
 		return page;
 	}

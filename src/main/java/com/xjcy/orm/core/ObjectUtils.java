@@ -21,6 +21,7 @@ public class ObjectUtils
 {
 	private static final Logger logger = Logger.getLogger(ObjectUtils.class);
 
+	private static final Object LOCK_OBJ = new Object();
 	private static final Integer QUERY_TIMEOUT = 5;
 
 	public static boolean isEmpty(Object[] objects)
@@ -124,9 +125,11 @@ public class ObjectUtils
 				obj = FieldUtils.ConvertValue(field, t, rs.getObject(item));
 				if (obj != null)
 				{
-					field.setAccessible(true);
-					field.set(tt, obj);
-					field.setAccessible(false);
+					synchronized (LOCK_OBJ)
+					{
+						field.setAccessible(true);
+						field.set(tt, obj);
+					}
 				}
 			}
 			return tt;

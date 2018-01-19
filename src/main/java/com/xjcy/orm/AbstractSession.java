@@ -13,7 +13,6 @@ import javax.sql.DataSource;
 import org.apache.log4j.Logger;
 
 import com.xjcy.orm.core.ObjectUtils;
-import com.xjcy.orm.core.ReflectJPA;
 import com.xjcy.orm.core.SqlCache;
 import com.xjcy.orm.event.SqlTranction;
 import com.xjcy.orm.mapper.PageInfo;
@@ -642,15 +641,9 @@ public abstract class AbstractSession
 
 	private static TableStruct getEntity(Class<?> cla) throws SQLException
 	{
-		String entity = cla.getName();
-		TableStruct struct = SqlCache.getEntity(entity);
+		TableStruct struct = SqlCache.getEntity(cla.getName());
 		if(struct == null)
-		{
-			struct = ReflectJPA.loadTable(cla);
-			if (struct == null)
-				throw new SQLException("No annotations for '" + entity + "' were found");
-			SqlCache.addEntity(entity, struct);
-		}
+			throw new SQLException("No annotations for '" + cla.getName() + "' were found");
 		return struct;
 	}
 

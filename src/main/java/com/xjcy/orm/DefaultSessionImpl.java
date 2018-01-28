@@ -154,7 +154,7 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession
 			ResultSet rs = ps.getGeneratedKeys();
 			if (rs.next())
 			{
-				result = rs.getInt(1);
+				result = rs.getObject(1);
 				FieldUtils.setValue(obj, struct.getGenerageKey(), result);
 			}
 			rs.close();

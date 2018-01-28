@@ -97,13 +97,13 @@ public class FieldUtils
 				if (genericType == Date.class)
 					return (Date) obj;
 				if (genericType == Integer.class)
-					return Integer.valueOf(obj.toString());
+					return Integer.parseInt(obj.toString());
 				if (genericType == Double.class)
-					return Double.valueOf(obj.toString());
+					return Double.parseDouble(obj.toString());
 				if (genericType == Long.class)
-					return Long.valueOf(obj.toString());
+					return Long.parseLong(obj.toString());
 				if (genericType == Float.class)
-					return Float.valueOf(obj.toString());
+					return Float.parseFloat(obj.toString());
 				if (genericType == char.class)
 					return obj.toString().charAt(0);
 				if (genericType == Boolean.class)
@@ -163,7 +163,10 @@ public class FieldUtils
 			if (field != null)
 			{
 				field.setAccessible(true);
-				field.set(obj, result);
+				if(field.getGenericType() == Integer.class)
+					field.set(obj, Integer.parseInt(result.toString()));
+				else
+					field.set(obj, result);
 				field.setAccessible(false);
 			}
 		}

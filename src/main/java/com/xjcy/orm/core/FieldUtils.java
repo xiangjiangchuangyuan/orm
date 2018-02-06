@@ -75,7 +75,18 @@ public class FieldUtils
 		Type genericType = field.getGenericType();
 		if (obj != null)
 		{
-			if (genericType == String.class)
+			if(field.getType().isEnum())
+			{
+				Object[] objs = field.getType().getEnumConstants();
+				if(obj instanceof Integer)
+					return objs[Integer.parseInt(obj.toString())];
+				for (Object e : objs)
+				{
+					if(e.toString().equals(obj.toString()))
+						return e;
+				}  
+			}
+			else if (genericType == String.class)
 			{
 				if (obj instanceof Timestamp)
 				{

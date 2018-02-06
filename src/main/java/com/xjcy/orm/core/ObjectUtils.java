@@ -129,6 +129,7 @@ public class ObjectUtils
 					{
 						field.setAccessible(true);
 						field.set(tt, obj);
+						field.setAccessible(false);
 					}
 				}
 			}

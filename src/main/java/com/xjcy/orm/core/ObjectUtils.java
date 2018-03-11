@@ -49,8 +49,7 @@ public class ObjectUtils
 		String sql = sqlMap.remove(0).toString();
 		if (struct.hasGenerageKey())
 			ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-		else
-			ps = conn.prepareStatement(sql);
+		else ps = conn.prepareStatement(sql);
 		Set<Entry<Integer, Object>> entries = sqlMap.entrySet();
 		for (Entry<Integer, Object> entry : entries)
 		{
@@ -111,25 +110,29 @@ public class ObjectUtils
 		return map;
 	}
 
-	public static <T> T copyValue(ResultMap map, ResultSet rs, Class<T> t)
+	public static <T> T copyValue(ResultMap map, ResultSet rs, Class<T> t, ResultSetMetaData metaData)
 	{
 		try
 		{
 			T tt = t.newInstance();
+			String colLabel;
 			Field field = null;
 			Object obj = null;
-			Set<String> items = map.keySet();
-			for (String item : items)
+			for (int i = 1; i <= metaData.getColumnCount(); i++)
 			{
-				field = map.get(item);
-				obj = FieldUtils.ConvertValue(field, t, rs.getObject(item));
-				if (obj != null)
+				colLabel = metaData.getColumnLabel(i);
+				field = map.get(colLabel);
+				if (field != null)
 				{
-					synchronized (LOCK_OBJ)
+					obj = rs.getObject(i);
+					if (obj != null && obj.toString().length() > 0)
 					{
-						field.setAccessible(true);
-						field.set(tt, obj);
-						field.setAccessible(false);
+						synchronized (LOCK_OBJ)
+						{
+							field.setAccessible(true);
+							field.set(tt, FieldUtils.ConvertValue(field, t, obj));
+							field.setAccessible(false);
+						}
 					}
 				}
 			}

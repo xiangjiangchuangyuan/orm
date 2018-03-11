@@ -3,6 +3,7 @@ package com.xjcy.orm;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,9 +54,10 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession
 		}
 		if (map.size() > 0)
 		{
+			ResultSetMetaData metaData = rs.getMetaData();
 			while (rs.next())
 			{
-				vos.add(ObjectUtils.copyValue(map, rs, t));
+				vos.add(ObjectUtils.copyValue(map, rs, t, metaData));
 			}
 		}
 		rs.getStatement().close();

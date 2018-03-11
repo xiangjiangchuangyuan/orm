@@ -73,56 +73,50 @@ public class FieldUtils
 	public static Object ConvertValue(Field field, Class<?> t, Object obj) throws IntrospectionException
 	{
 		Type genericType = field.getGenericType();
-		if (obj != null)
+		if (field.getType().isEnum())
 		{
-			if(field.getType().isEnum())
+			Object[] objs = field.getType().getEnumConstants();
+			if (obj instanceof Integer)
+				return objs[Integer.parseInt(obj.toString())];
+			for (Object e : objs)
 			{
-				Object[] objs = field.getType().getEnumConstants();
-				if(obj instanceof Integer)
-					return objs[Integer.parseInt(obj.toString())];
-				for (Object e : objs)
-				{
-					if(e.toString().equals(obj.toString()))
-						return e;
-				}  
+				if (e.toString().equals(obj.toString()))
+					return e;
 			}
-			else if (genericType == String.class)
-			{
-				if (obj instanceof Timestamp)
-				{
-					String format = "yyyy-MM-dd HH:mm:ss";
-					PropertyDescriptor pd = new PropertyDescriptor(field.getName(), t);
-					Method getMethod = pd.getReadMethod();// 获得get方法
-					if (pd != null)
-					{
-						DateFormat df = getMethod.getAnnotation(DateFormat.class);
-						if (df != null)
-							format = df.pattern();
-					}
-					return getDateFormat((Date) obj, format);
-				}
-				return obj.toString();
-			}
-			if (!"".equals(obj.toString()))
-			{
-				if (genericType == Date.class)
-					return (Date) obj;
-				if (genericType == Integer.class)
-					return Integer.parseInt(obj.toString());
-				if (genericType == Double.class)
-					return Double.parseDouble(obj.toString());
-				if (genericType == Long.class)
-					return Long.parseLong(obj.toString());
-				if (genericType == Float.class)
-					return Float.parseFloat(obj.toString());
-				if (genericType == char.class)
-					return obj.toString().charAt(0);
-				if (genericType == Boolean.class)
-					return Boolean.parseBoolean(obj.toString());
-			}
-			return obj;
+			return null;
 		}
-		return null;
+		if (genericType == String.class)
+		{
+			if (obj instanceof Timestamp)
+			{
+				String format = "yyyy-MM-dd HH:mm:ss";
+				PropertyDescriptor pd = new PropertyDescriptor(field.getName(), t);
+				Method getMethod = pd.getReadMethod();// 获得get方法
+				if (pd != null)
+				{
+					DateFormat df = getMethod.getAnnotation(DateFormat.class);
+					if (df != null)
+						format = df.pattern();
+				}
+				return getDateFormat((Date) obj, format);
+			}
+			return obj.toString();
+		}
+		if (genericType == Date.class)
+			return (Date) obj;
+		if (genericType == Integer.class)
+			return Integer.parseInt(obj.toString());
+		if (genericType == Double.class)
+			return Double.parseDouble(obj.toString());
+		if (genericType == Long.class)
+			return Long.parseLong(obj.toString());
+		if (genericType == Float.class)
+			return Float.parseFloat(obj.toString());
+		if (genericType == char.class)
+			return obj.toString().charAt(0);
+		if (genericType == Boolean.class)
+			return Boolean.parseBoolean(obj.toString());
+		return obj;
 	}
 
 	private static String getDateFormat(Date date, String format)
@@ -174,10 +168,9 @@ public class FieldUtils
 			if (field != null)
 			{
 				field.setAccessible(true);
-				if(field.getGenericType() == Integer.class)
+				if (field.getGenericType() == Integer.class)
 					field.set(obj, Integer.parseInt(result.toString()));
-				else
-					field.set(obj, result);
+				else field.set(obj, result);
 				field.setAccessible(false);
 			}
 		}

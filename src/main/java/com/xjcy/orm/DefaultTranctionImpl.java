@@ -14,8 +14,9 @@ public class DefaultTranctionImpl implements SqlTranction
 	
 	private Connection connection;
 
-	public DefaultTranctionImpl(Connection conn)
+	public DefaultTranctionImpl(Connection conn) throws SQLException
 	{
+		conn.setAutoCommit(false);
 		this.connection = conn;
 	}
 

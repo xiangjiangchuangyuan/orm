@@ -26,50 +26,16 @@ public abstract class AbstractSession
 	private static final Logger logger = Logger.getLogger(AbstractSession.class);
 
 	protected DataSource ds;
-	static final String NULL = "null";
 
 	// 获取带事务的连接
 	public SqlTranction beginTranction() throws SQLException
 	{
-		Connection conn = ds.getConnection();
-		conn.setAutoCommit(false);
-		return new DefaultTranctionImpl(conn);
+		return new DefaultTranctionImpl(ds.getConnection());
 	}
 
-	public <T> List<T> Query(SqlTranction tran, Class<T> t) throws SQLException
-	{
-		TableStruct struct = getEntity(t);
-		String sql = "select * from " + struct.getTableName();
-		return Query(tran, t, sql, NULL);
-	}
-
-	public <T> List<T> Query(SqlTranction tran, Class<T> t, String sql) throws SQLException
-	{
-		return Query(tran, t, sql, NULL);
-	}
-
-	public <T> List<T> Query(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException
+	public <T> List<T> selectList(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException
 	{
 		return buildQuery(t, sql, tran.Connection(), objects);
-	}
-
-	public <T> List<T> Query(Class<T> t) throws SQLException
-	{
-		TableStruct struct = getEntity(t);
-		return Query(t, "select * from " + struct.getTableName(), NULL);
-	}
-
-	/***
-	 * 
-	 * @param t
-	 *            要查询的对象
-	 * @param sql
-	 *            要执行的sql
-	 * @return Model Collection
-	 */
-	public <T> List<T> Query(Class<T> t, String sql)
-	{
-		return Query(t, sql, NULL);
 	}
 
 	/***
@@ -82,7 +48,7 @@ public abstract class AbstractSession
 	 *            是否字段转换列名进行映射
 	 * @return 查询的对象集合
 	 */
-	public <T> List<T> Query(Class<T> t, String sql, Object... objects)
+	public <T> List<T> selectList(Class<T> t, String sql, Object... objects)
 	{
 		Connection conn = null;
 		try
@@ -104,11 +70,6 @@ public abstract class AbstractSession
 	protected abstract <T> List<T> buildQuery(Class<T> t, String sql, Connection conn, Object... objects)
 			throws SQLException;
 
-	public <T> T Single(Class<T> t, String sql)
-	{
-		return Single(t, sql, NULL);
-	}
-
 	/***
 	 * 
 	 * @param t
@@ -120,9 +81,9 @@ public abstract class AbstractSession
 	 * @return 返回单个对象
 	 * 
 	 */
-	public <T> T Single(Class<T> t, String sql, Object... objects)
+	public <T> T selectOne(Class<T> t, String sql, Object... objects)
 	{
-		List<T> dataList = Query(t, sql, objects);
+		List<T> dataList = selectList(t, sql, objects);
 		if (dataList != null && dataList.size() == 1)
 		{
 			return dataList.get(0);
@@ -130,14 +91,9 @@ public abstract class AbstractSession
 		return null;
 	}
 
-	public <T> T Single(SqlTranction tran, Class<T> t, String sql) throws SQLException
+	public <T> T selectOne(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException
 	{
-		return Single(tran, t, sql, NULL);
-	}
-
-	public <T> T Single(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException
-	{
-		List<T> dataList = Query(tran, t, sql, objects);
+		List<T> dataList = selectList(tran, t, sql, objects);
 		if (dataList != null)
 		{
 			if (dataList.size() == 1)
@@ -148,25 +104,9 @@ public abstract class AbstractSession
 		return null;
 	}
 
-	public <T> List<T> QueryList(SqlTranction tran, String sql) throws SQLException
-	{
-		return QueryList(tran, sql, NULL);
-	}
-
-	public <T> List<T> QueryList(SqlTranction tran, String sql, Object... objects) throws SQLException
+	public <E> List<E> selectList(SqlTranction tran, String sql, Object... objects) throws SQLException
 	{
 		return buildQueryList(sql, tran.Connection(), objects);
-	}
-
-	/***
-	 * 
-	 * @param sql
-	 *            查询的SQL
-	 * @return 查询的对象集合
-	 */
-	public <T> List<T> QueryList(String sql)
-	{
-		return QueryList(sql, NULL);
 	}
 
 	/**
@@ -176,7 +116,7 @@ public abstract class AbstractSession
 	 *            parameters
 	 * @return 查询的单列集合
 	 */
-	public <T> List<T> QueryList(String sql, Object... objects)
+	public <E> List<E> selectList(String sql, Object... objects)
 	{
 		Connection conn = null;
 		try
@@ -195,20 +135,15 @@ public abstract class AbstractSession
 		}
 	}
 
-	protected abstract <T> List<T> buildQueryList(String sql, Connection conn, Object... objects) throws SQLException;
+	protected abstract <E> List<E> buildQueryList(String sql, Connection conn, Object... objects) throws SQLException;
 
-	public <T> PageInfo<T> Query(Class<T> t, PageParamater paras)
-	{
-		return Query(t, paras, NULL);
-	}
-	
-	public <T> PageInfo<T> Query(Class<T> t, PageParamater paras, Object... objects)
+	public <T> PageInfo<T> selectPage(Class<T> t, PageParamater paras, Object... objects)
 	{
 		int pageSize = paras.getPageSize();
 		PageInfo<T> page = new PageInfo<T>(paras.getPageNum(), pageSize);
 		if (ObjectUtils.isEmpty(objects))
 		{
-			page.setResult(Query(t, paras.getSelectSql() + " LIMIT ?,?", page.getStartRow(), pageSize));
+			page.setResult(selectList(t, paras.getSelectSql() + " LIMIT ?,?", page.getStartRow(), pageSize));
 			page.setTotal(Long.parseLong(getSingle(paras.getCountSql()).toString()));
 		}
 		else
@@ -218,15 +153,10 @@ public abstract class AbstractSession
 			// 赋值LIMIT参数
 			newObj[objects.length] = page.getStartRow();
 			newObj[objects.length + 1] = pageSize;
-			page.setResult(Query(t, paras.getSelectSql() + " LIMIT ?,?", newObj));
+			page.setResult(selectList(t, paras.getSelectSql() + " LIMIT ?,?", newObj));
 			page.setTotal(Long.parseLong(getSingle(paras.getCountSql(), objects).toString()));
 		}
 		return page;
-	}
-
-	public Map<String, Object> QueryMap(String sql)
-	{
-		return QueryMap(sql, NULL);
 	}
 
 	/***
@@ -235,7 +165,7 @@ public abstract class AbstractSession
 	 *            要执行的sql
 	 * @return 查询的键值对
 	 */
-	public Map<String, Object> QueryMap(String sql, Object... objects)
+	public <K, V> Map<K, V> selectMap(String sql, Object... objects)
 	{
 		Connection conn = null;
 		try
@@ -254,32 +184,17 @@ public abstract class AbstractSession
 		}
 	}
 
-	public Map<String, Object> QueryMap(SqlTranction tran, String sql) throws SQLException
-	{
-		return QueryMap(tran, sql, NULL);
-	}
-
-	public Map<String, Object> QueryMap(SqlTranction tran, String sql, Object... objects) throws SQLException
+	public <K, V> Map<K, V> selectMap(SqlTranction tran, String sql, Object... objects) throws SQLException
 	{
 		return buildQueryMap(sql, tran.Connection(), objects);
 	}
 
-	protected abstract Map<String, Object> buildQueryMap(String sql, Connection conn, Object... objects)
+	protected abstract <K, V> Map<K, V> buildQueryMap(String sql, Connection conn, Object... objects)
 			throws SQLException;
-
-	public Object getSingle(SqlTranction tran, String sql) throws SQLException
-	{
-		return getSingle(tran, sql, NULL);
-	}
 
 	public Object getSingle(SqlTranction tran, String sql, Object... objects) throws SQLException
 	{
 		return buildGetSingle(sql, tran.Connection(), objects);
-	}
-
-	public Object getSingle(String sql)
-	{
-		return getSingle(sql, NULL);
 	}
 
 	/***
@@ -309,25 +224,9 @@ public abstract class AbstractSession
 
 	protected abstract Object buildGetSingle(String sql, Connection conn, Object... objects) throws SQLException;
 
-	public boolean Execute(SqlTranction tran, String sql) throws SQLException
-	{
-		return Execute(tran, sql, NULL);
-	}
-
-	public boolean Execute(SqlTranction tran, String sql, Object... objects) throws SQLException
+	public boolean execute(SqlTranction tran, String sql, Object... objects) throws SQLException
 	{
 		return buildExecute(sql, tran.Connection(), objects);
-	}
-
-	/***
-	 * 
-	 * @param sql
-	 *            要执行的sql
-	 * @return boolean
-	 */
-	public boolean Execute(String sql)
-	{
-		return Execute(sql, NULL);
 	}
 
 	/***
@@ -338,7 +237,7 @@ public abstract class AbstractSession
 	 *            执行sql语句对应的参数
 	 * @return boolean
 	 */
-	public boolean Execute(String sql, Object... objects)
+	public boolean execute(String sql, Object... objects)
 	{
 		Connection conn = null;
 		try
@@ -358,33 +257,6 @@ public abstract class AbstractSession
 	}
 
 	protected abstract boolean buildExecute(String sql, Connection conn, Object... objects) throws SQLException;
-
-	public boolean Execute(List<String> sqlList)
-	{
-		long start = getNow();
-		SqlTranction tran = null;
-		try
-		{
-			tran = beginTranction();
-			for (String sql : sqlList)
-			{
-				Execute(tran, sql);
-			}
-			tran.commit();
-			logger.debug("Executed, Nums => " + sqlList.size() + ", Times => " + (getNow() - start) + "ns");
-			return true;
-		}
-		catch (SQLException e)
-		{
-			tran.rollback();
-			logger.error("Execute sqlList faild", e);
-			return false;
-		}
-		finally
-		{
-			close(tran);
-		}
-	}
 
 	public boolean save(SqlTranction tran, Object obj) throws SQLException
 	{
@@ -547,9 +419,9 @@ public abstract class AbstractSession
 	 *            存储过程名
 	 * @return 执行结果
 	 */
-	public boolean RunProcdure(String sql)
+	public boolean callProcdure(String sql)
 	{
-		return RunProcdure(sql, null);
+		return callProcdure(sql, null);
 	}
 
 	/***
@@ -561,7 +433,7 @@ public abstract class AbstractSession
 	 *            存储过程参数
 	 * @return 执行结果
 	 */
-	public boolean RunProcdure(String sql, List<ProcParamater> paras)
+	public boolean callProcdure(String sql, List<ProcParamater> paras)
 	{
 		long start = getNow();
 		Connection conn = null;
@@ -642,7 +514,7 @@ public abstract class AbstractSession
 	private static TableStruct getEntity(Class<?> cla) throws SQLException
 	{
 		TableStruct struct = SqlCache.getEntity(cla.getName());
-		if(struct == null)
+		if (struct == null)
 			throw new SQLException("No annotations for '" + cla.getName() + "' were found");
 		return struct;
 	}

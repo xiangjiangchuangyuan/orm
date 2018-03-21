@@ -73,14 +73,14 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected <T> List<T> buildQueryList(String sql, Connection conn, Object... objects) throws SQLException
+	protected <E> List<E> buildQueryList(String sql, Connection conn, Object... objects) throws SQLException
 	{
 		long start = getNow();
 		ResultSet rs = ObjectUtils.buildResultSet(conn, sql, objects);
-		List<T> dataList = new ArrayList<>();
+		List<E> dataList = new ArrayList<>();
 		while (rs.next())
 		{
-			dataList.add((T) rs.getObject(1));
+			dataList.add((E) rs.getObject(1));
 		}
 		rs.getStatement().close();
 		rs.close();
@@ -92,15 +92,16 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession
 		return dataList;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	protected Map<String, Object> buildQueryMap(String sql, Connection conn, Object... objects) throws SQLException
+	protected <K, V> Map<K, V> buildQueryMap(String sql, Connection conn, Object... objects) throws SQLException
 	{
 		long start = getNow();
 		ResultSet rs = ObjectUtils.buildResultSet(conn, sql, objects);
-		Map<String, Object> map = new HashMap<>();
+		Map<K, V> map = new HashMap<>();
 		while (rs.next())
 		{
-			map.put(rs.getString(1), rs.getObject(2));
+			map.put((K)rs.getObject(1), (V)rs.getObject(2));
 		}
 		rs.getStatement().close();
 		rs.close();

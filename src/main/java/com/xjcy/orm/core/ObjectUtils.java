@@ -32,8 +32,6 @@ public class ObjectUtils
 			return true;
 		if (objects[0] == null)
 			return true;
-		if (objects[0].toString() == "null")
-			return true;
 		return false;
 	}
 

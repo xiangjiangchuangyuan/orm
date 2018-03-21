@@ -8,13 +8,14 @@ import javax.sql.DataSource;
 
 public class SqlSessionFactory
 {
-	private static DefaultSessionImpl sessionImpl;
+	private static SqlSession sessionImpl;
 
 	public static SqlSession getSession(DataSource ds, String entityPkg)
 	{
 		if (sessionImpl == null)
 		{
-			sessionImpl = new DefaultSessionImpl(ds);
+			SqlSessionProxy proxy = new SqlSessionProxy(new DefaultSessionImpl(ds));
+			sessionImpl = proxy.getProxy();
 			if (!StringUtils.isEmpty(entityPkg))
 				EntityUtils.cacheEntities(entityPkg);
 		}

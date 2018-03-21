@@ -14,65 +14,35 @@ public interface SqlSession
 
 	void close(SqlTranction tran);
 
-	<T> PageInfo<T> Query(Class<T> t, PageParamater paras, Object... objects);
+	<T> PageInfo<T> selectPage(Class<T> t, PageParamater paras, Object... objects);
 
-	boolean RunProcdure(String sql);
+	boolean callProcdure(String sql);
 
-	boolean RunProcdure(String sql, List<ProcParamater> paras);
+	boolean callProcdure(String sql, List<ProcParamater> paras);
 
-	<T> List<T> Query(Class<T> t) throws SQLException;
+	<T> List<T> selectList(Class<T> t, String sql, Object... objects);
 
-	<T> List<T> Query(Class<T> t, String sql);
+	<T> List<T> selectList(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException;
 
-	<T> List<T> Query(Class<T> t, String sql, Object... objects);
+	<E> List<E> selectList(String sql, Object... objects);
 
-	<T> List<T> Query(SqlTranction tran, Class<T> t) throws SQLException;
+	<E> List<E> selectList(SqlTranction tran, String sql, Object... objects) throws SQLException;
 
-	<T> List<T> Query(SqlTranction tran, Class<T> t, String sql) throws SQLException;
+	<T> T selectOne(Class<T> t, String sql, Object... objects);
 
-	<T> List<T> Query(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException;
+	<T> T selectOne(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException;
 
-	<T> List<T> QueryList(String sql);
+	<K, V> Map<K, V> selectMap(String sql, Object... objects);
 
-	<T> List<T> QueryList(String sql, Object... objects);
-
-	<T> List<T> QueryList(SqlTranction tran, String sql) throws SQLException;
-
-	<T> List<T> QueryList(SqlTranction tran, String sql, Object... objects) throws SQLException;
-
-	<T> T Single(Class<T> t, String sql);
-
-	<T> T Single(Class<T> t, String sql, Object... objects);
-
-	<T> T Single(SqlTranction tran, Class<T> t, String sql) throws SQLException;
-
-	<T> T Single(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException;
-
-	Map<String, Object> QueryMap(String sql);
-
-	Map<String, Object> QueryMap(String sql, Object... objects);
-
-	Map<String, Object> QueryMap(SqlTranction tran, String sql) throws SQLException;
-
-	Map<String, Object> QueryMap(SqlTranction tran, String sql, Object... objects) throws SQLException;
-
-	Object getSingle(String sql);
+	<K, V> Map<K, V> selectMap(SqlTranction tran, String sql, Object... objects) throws SQLException;
 
 	Object getSingle(String sql, Object... objects);
 
-	Object getSingle(SqlTranction tran, String sql) throws SQLException;
-
 	Object getSingle(SqlTranction tran, String sql, Object... objects) throws SQLException;
 
-	boolean Execute(String sql);
+	boolean execute(String sql, Object... objects);
 
-	boolean Execute(String sql, Object... objects);
-
-	boolean Execute(SqlTranction tran, String sql) throws SQLException;
-
-	boolean Execute(SqlTranction tran, String sql, Object... objects) throws SQLException;
-
-	boolean Execute(List<String> sqlList);
+	boolean execute(SqlTranction tran, String sql, Object... objects) throws SQLException;
 
 	boolean update(Object obj);
 

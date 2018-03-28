@@ -17,12 +17,13 @@ import org.apache.log4j.Logger;
 import com.xjcy.orm.core.FieldUtils;
 import com.xjcy.orm.core.ObjectUtils;
 import com.xjcy.orm.core.SqlCache;
+import com.xjcy.orm.event.RecordSession;
 import com.xjcy.orm.event.SqlSession;
 import com.xjcy.orm.mapper.ResultMap;
 import com.xjcy.orm.mapper.TableStruct;
 import com.xjcy.orm.mapper.TableStruct.SQLType;
 
-public class DefaultSessionImpl extends AbstractSession implements SqlSession
+public class DefaultSessionImpl extends AbstractSession implements SqlSession , RecordSession
 {
 	private static final Logger logger = Logger.getLogger(DefaultSessionImpl.class);
 

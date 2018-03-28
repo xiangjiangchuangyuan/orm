@@ -2,6 +2,7 @@ package com.xjcy.orm;
 
 import com.xjcy.orm.core.EntityUtils;
 import com.xjcy.orm.event.SqlSession;
+import com.xjcy.orm.mapper.ActiveRecord;
 import com.xjcy.util.StringUtils;
 
 import javax.sql.DataSource;
@@ -14,8 +15,10 @@ public class SqlSessionFactory
 	{
 		if (sessionImpl == null)
 		{
-			SqlSessionProxy proxy = new SqlSessionProxy(new DefaultSessionImpl(ds));
+			DefaultSessionImpl defaultSession = new DefaultSessionImpl(ds);
+			SqlSessionProxy proxy = new SqlSessionProxy(defaultSession);
 			sessionImpl = proxy.getProxy();
+			ActiveRecord.init(defaultSession);
 			if (!StringUtils.isEmpty(entityPkg))
 				EntityUtils.cacheEntities(entityPkg);
 		}

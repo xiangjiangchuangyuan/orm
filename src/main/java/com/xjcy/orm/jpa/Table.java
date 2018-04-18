@@ -3,6 +3,8 @@ package com.xjcy.orm.jpa;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import com.xjcy.util.STR;
+
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.ElementType;
@@ -11,5 +13,5 @@ import java.lang.annotation.ElementType;
 @Target(ElementType.TYPE)
 public @interface Table
 {
-	String name() default "";
+	String name() default STR.EMPTY;
 }

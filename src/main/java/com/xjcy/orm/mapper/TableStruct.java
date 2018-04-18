@@ -11,8 +11,7 @@ import org.apache.log4j.Logger;
 
 import com.xjcy.orm.core.FieldUtils;
 
-public class TableStruct
-{
+public class TableStruct {
 	private static final Logger logger = Logger.getLogger(TableStruct.class);
 
 	private String name;
@@ -22,70 +21,57 @@ public class TableStruct
 	private Map<Integer, Object> sqlMap = new HashMap<>();
 	private List<String> primaryKeys;
 
-	public TableStruct(String name)
-	{
+	public TableStruct(String name) {
 		this.name = name;
 	}
 
-	public String getTableName()
-	{
+	public String getTableName() {
 		return this.name;
 	}
 
-	public List<String> getPrimaryKeys()
-	{
+	public List<String> getPrimaryKeys() {
 		return this.primaryKeys;
 	}
 
-	public void setPrimaryKeys(List<String> pks)
-	{
+	public void setPrimaryKeys(List<String> pks) {
 		this.primaryKeys = pks;
 	}
-	
-	public String getGenerageKey()
-	{
+
+	public String getGenerageKey() {
 		return this.generateKey;
 	}
 
-	public boolean hasGenerageKey()
-	{
+	public boolean hasGenerageKey() {
 		return this.generateKey != null;
 	}
 
-	public void setGenerateKey(String column)
-	{
+	public void setGenerateKey(String column) {
 		this.generateKey = column;
 	}
 
-	public boolean hasPrimaryKey(Object obj)
-	{
-		if(primaryKeys == null || primaryKeys.isEmpty())
+	public boolean hasPrimaryKey(Object obj) {
+		if (primaryKeys == null || primaryKeys.isEmpty())
 			return false;
-		for (String key : primaryKeys)
-		{
-			if( FieldUtils.getValue(obj, key) != null)
+		for (String key : primaryKeys) {
+			if (FieldUtils.getValue(obj, key) != null)
 				return true;
 		}
 		return false;
 	}
 
-	public void setColumnMethods(Map<String, Method> methods)
-	{
+	public void setColumnMethods(Map<String, Method> methods) {
 		this.columnMethods = methods;
 	}
-	
-	public void setColumns(Object obj, SQLType sqlType) throws SQLException
-	{
+
+	public void setColumns(Object obj, SQLType sqlType) throws SQLException {
 		if (this.columnMethods == null || this.columnMethods.isEmpty())
 			return;
 		columnObjects = new HashMap<>();
 		Set<String> columnNames = this.columnMethods.keySet();
-		for (String colName : columnNames)
-		{
+		for (String colName : columnNames) {
 			columnObjects.put(colName, FieldUtils.getValue(obj, this.columnMethods.get(colName)));
 		}
-		switch (sqlType)
-		{
+		switch (sqlType) {
 		case INSERT:
 			buildInsertMap();
 			break;
@@ -109,73 +95,56 @@ public class TableStruct
 		}
 	}
 
-	public Map<Integer, Object> getSqlMap()
-	{
+	public Map<Integer, Object> getSqlMap() {
 		return this.sqlMap;
 	}
 
-	private void buildDeleteMap()
-	{
-		try
-		{
+	private void buildDeleteMap() {
+		try {
 			sqlMap.clear();
 			StringBuffer sql1 = new StringBuffer();
 			Set<String> keys = columnObjects.keySet();
 			int j = 1;
 			Object obj = null;
-			for (String key : keys)
-			{
+			for (String key : keys) {
 				obj = columnObjects.get(key);
-				if (obj != null)
-				{
+				if (obj != null) {
 					sql1.append("`" + key + "`=? AND ");
 					sqlMap.put(j, obj);
 					j++;
 				}
 			}
-			if (j > 1)
-			{
+			if (j > 1) {
 				sql1.delete(sql1.length() - 5, sql1.length());
 			}
 			String sql = "delete from " + this.name + " where " + sql1.toString();
 			if (logger.isDebugEnabled())
 				logger.debug("构造完成的SQL => " + sql);
 			sqlMap.put(0, sql);
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("构造DELETE语句失败", e);
 		}
 	}
 
-	private void buildUpdateMap(boolean notNull)
-	{
-		try
-		{
+	private void buildUpdateMap(boolean notNull) {
+		try {
 			sqlMap.clear();
 			StringBuffer sql1 = new StringBuffer(" set ");
 			Set<String> keys = columnObjects.keySet();
 			int j = 1;
-			if (notNull)
-			{
+			if (notNull) {
 				Object obj = null;
-				for (String key : keys)
-				{
+				for (String key : keys) {
 					obj = columnObjects.get(key);
-					if (primaryKeys != null && !primaryKeys.contains(key) && obj != null)
-					{
+					if (primaryKeys != null && !primaryKeys.contains(key) && obj != null) {
 						sql1.append("`" + key + "`=?,");
 						sqlMap.put(j, obj);
 						j++;
 					}
 				}
-			}
-			else
-			{
-				for (String key : keys)
-				{
-					if (primaryKeys != null && !primaryKeys.contains(key))
-					{
+			} else {
+				for (String key : keys) {
+					if (primaryKeys != null && !primaryKeys.contains(key)) {
 						sql1.append("`" + key + "`=?,");
 						sqlMap.put(j, columnObjects.get(key));
 						j++;
@@ -184,43 +153,35 @@ public class TableStruct
 			}
 			sql1.deleteCharAt(sql1.length() - 1);
 			StringBuffer sql2 = new StringBuffer();
-			if(primaryKeys != null && !primaryKeys.isEmpty())
-			{
-				for (String key : primaryKeys)
-				{
+			if (primaryKeys != null && !primaryKeys.isEmpty()) {
+				for (String key : primaryKeys) {
 					sql2.append("`" + key + "`=? AND ");
 					sqlMap.put(j, columnObjects.get(key));
 					j++;
 				}
 			}
-			if(sql2.length() > 0)
+			if (sql2.length() > 0)
 				sql2.delete(sql2.length() - 4, sql2.length());
 			String sql = "update " + this.name + sql1.toString() + " where " + sql2.toString();
 			if (logger.isDebugEnabled())
 				logger.debug("构造完成的SQL => " + sql);
 			sqlMap.put(0, sql);
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("构造UPDATE语句失败", e);
 		}
 	}
 
-	private void buildInsertMap()
-	{
-		try
-		{
+	private void buildInsertMap() {
+		try {
 			sqlMap.clear();
 			StringBuffer sql1 = new StringBuffer("(");
 			StringBuffer sql2 = new StringBuffer("(");
 			Set<String> keys = columnObjects.keySet();
 			int j = 1;
 			Object obj = null;
-			for (String key : keys)
-			{
+			for (String key : keys) {
 				obj = columnObjects.get(key);
-				if (obj != null)
-				{
+				if (obj != null) {
 					sql1.append("`" + key + "`,");
 					sql2.append("?,");
 					sqlMap.put(j, obj);
@@ -235,15 +196,12 @@ public class TableStruct
 			if (logger.isDebugEnabled())
 				logger.debug("构造完成的SQL => " + sql);
 			sqlMap.put(0, sql);
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			logger.error("构造Insert语句失败", e);
 		}
 	}
 
-	public enum SQLType
-	{
+	public enum SQLType {
 		INSERT, UPDATE, UPDATENOTNULL, DELETE, SELECT, SAVEORUPDATE
 	}
 }

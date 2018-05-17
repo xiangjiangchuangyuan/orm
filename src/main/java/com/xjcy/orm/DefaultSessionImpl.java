@@ -18,6 +18,7 @@ import com.xjcy.orm.core.FieldUtils;
 import com.xjcy.orm.core.ObjectUtils;
 import com.xjcy.orm.core.SqlCache;
 import com.xjcy.orm.event.RecordSession;
+import com.xjcy.orm.event.Sql;
 import com.xjcy.orm.event.SqlSession;
 import com.xjcy.orm.mapper.ResultMap;
 import com.xjcy.orm.mapper.TableStruct;
@@ -33,11 +34,11 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 	}
 
 	@Override
-	protected <T> List<T> buildQuery(Class<T> t, String sql, Connection conn, Object... objects) throws SQLException
+	protected <T> List<T> buildQuery(Connection conn, Class<T> t, Sql sql) throws SQLException
 	{
 		long start = getNow();
 		List<T> vos = new ArrayList<>();
-		ResultSet rs = ObjectUtils.buildResultSet(conn, sql, objects);
+		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
 		long start2 = getNow();
 		String cacheKey = t.getName() + "_" + sql;
 		ResultMap map = SqlCache.get(cacheKey);
@@ -74,10 +75,10 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected <E> List<E> buildQueryList(String sql, Connection conn, Object... objects) throws SQLException
+	protected <E> List<E> buildQueryList(Connection conn, Sql sql) throws SQLException
 	{
 		long start = getNow();
-		ResultSet rs = ObjectUtils.buildResultSet(conn, sql, objects);
+		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
 		List<E> dataList = new ArrayList<>();
 		while (rs.next())
 		{
@@ -95,10 +96,10 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 
 	@SuppressWarnings("unchecked")
 	@Override
-	protected <K, V> Map<K, V> buildQueryMap(String sql, Connection conn, Object... objects) throws SQLException
+	protected <K, V> Map<K, V> buildQueryMap(Connection conn, Sql sql) throws SQLException
 	{
 		long start = getNow();
-		ResultSet rs = ObjectUtils.buildResultSet(conn, sql, objects);
+		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
 		Map<K, V> map = new HashMap<>();
 		while (rs.next())
 		{
@@ -115,11 +116,11 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 	}
 
 	@Override
-	protected Object buildGetSingle(String sql, Connection conn, Object... objects) throws SQLException
+	protected Object buildGetSingle(Connection conn, Sql sql) throws SQLException
 	{
 		long start = getNow();
 		Object obj = null;
-		ResultSet rs = ObjectUtils.buildResultSet(conn, sql, objects);
+		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
 		if (rs.next())
 			obj = rs.getObject(1);
 		rs.getStatement().close();
@@ -133,10 +134,10 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 	}
 
 	@Override
-	protected boolean buildExecute(String sql, Connection conn, Object... objects) throws SQLException
+	protected boolean buildExecute(Connection conn, Sql sql) throws SQLException
 	{
 		long start = getNow();
-		Integer num = ObjectUtils.executeUpdate(conn, sql, objects);
+		Integer num = ObjectUtils.executeUpdate(conn, sql);
 		if (logger.isDebugEnabled())
 		{
 			logger.debug("SQL => " + sql);

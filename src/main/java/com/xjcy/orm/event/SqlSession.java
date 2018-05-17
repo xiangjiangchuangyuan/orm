@@ -24,23 +24,47 @@ public interface SqlSession
 
 	<T> List<T> selectList(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException;
 
+	<T> List<T> selectList(Class<T> t, Sql sql);
+
+	<T> List<T> selectList(SqlTranction tran, Class<T> t, Sql sql) throws SQLException;
+
 	<E> List<E> selectList(String sql, Object... objects);
 
 	<E> List<E> selectList(SqlTranction tran, String sql, Object... objects) throws SQLException;
+
+	<E> List<E> selectList(Sql sql);
+
+	<E> List<E> selectList(SqlTranction tran, Sql sql) throws SQLException;
 
 	<T> T selectOne(Class<T> t, String sql, Object... objects);
 
 	<T> T selectOne(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException;
 
+	<T> T selectOne(Class<T> t, Sql sql);
+
+	<T> T selectOne(SqlTranction tran, Class<T> t, Sql sql) throws SQLException;
+
 	<K, V> Map<K, V> selectMap(String sql, Object... objects);
 
 	<K, V> Map<K, V> selectMap(SqlTranction tran, String sql, Object... objects) throws SQLException;
+
+	<K, V> Map<K, V> selectMap(Sql sql);
+
+	<K, V> Map<K, V> selectMap(SqlTranction tran, Sql sql) throws SQLException;
 
 	Object getSingle(String sql, Object... objects);
 
 	Object getSingle(SqlTranction tran, String sql, Object... objects) throws SQLException;
 
+	Object getSingle(Sql sql);
+
+	Object getSingle(SqlTranction tran, Sql sql) throws SQLException;
+
 	boolean execute(String sql, Object... objects);
 
 	boolean execute(SqlTranction tran, String sql, Object... objects) throws SQLException;
+	
+	boolean execute(Sql sql);
+
+	boolean execute(SqlTranction tran, Sql sql) throws SQLException;
 }

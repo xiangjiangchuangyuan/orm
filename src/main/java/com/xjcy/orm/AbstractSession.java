@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 
 import com.xjcy.orm.core.ObjectUtils;
 import com.xjcy.orm.core.SqlCache;
+import com.xjcy.orm.event.Sql;
 import com.xjcy.orm.event.SqlTranction;
 import com.xjcy.orm.mapper.PageInfo;
 import com.xjcy.orm.mapper.PageParamater;
@@ -32,7 +33,11 @@ public abstract class AbstractSession {
 	}
 
 	public <T> List<T> selectList(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException {
-		return buildQuery(t, sql, tran.Connection(), objects);
+		return selectList(tran, t, Sql.parse(sql, objects));
+	}
+
+	public <T> List<T> selectList(SqlTranction tran, Class<T> t, Sql sql) throws SQLException {
+		return buildQuery(tran.Connection(), t, sql);
 	}
 
 	/***
@@ -46,10 +51,14 @@ public abstract class AbstractSession {
 	 * @return 查询的对象集合
 	 */
 	public <T> List<T> selectList(Class<T> t, String sql, Object... objects) {
+		return selectList(t, Sql.parse(sql, objects));
+	}
+
+	public <T> List<T> selectList(Class<T> t, Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildQuery(t, sql, conn, objects);
+			return buildQuery(conn, t, sql);
 		} catch (SQLException e) {
 			logger.error("Get result faild => " + sql, e);
 			return null;
@@ -58,8 +67,7 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract <T> List<T> buildQuery(Class<T> t, String sql, Connection conn, Object... objects)
-			throws SQLException;
+	protected abstract <T> List<T> buildQuery(Connection conn, Class<T> t, Sql sql) throws SQLException;
 
 	/***
 	 * 
@@ -73,7 +81,11 @@ public abstract class AbstractSession {
 	 * 
 	 */
 	public <T> T selectOne(Class<T> t, String sql, Object... objects) {
-		List<T> dataList = selectList(t, sql, objects);
+		return selectOne(t, Sql.parse(sql, objects));
+	}
+
+	public <T> T selectOne(Class<T> t, Sql sql) {
+		List<T> dataList = selectList(t, sql);
 		if (dataList != null && dataList.size() == 1) {
 			return dataList.get(0);
 		}
@@ -81,7 +93,11 @@ public abstract class AbstractSession {
 	}
 
 	public <T> T selectOne(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException {
-		List<T> dataList = selectList(tran, t, sql, objects);
+		return selectOne(tran, t, Sql.parse(sql, objects));
+	}
+
+	public <T> T selectOne(SqlTranction tran, Class<T> t, Sql sql) throws SQLException {
+		List<T> dataList = selectList(tran, t, sql);
 		if (dataList != null) {
 			if (dataList.size() == 1)
 				return dataList.get(0);
@@ -92,7 +108,11 @@ public abstract class AbstractSession {
 	}
 
 	public <E> List<E> selectList(SqlTranction tran, String sql, Object... objects) throws SQLException {
-		return buildQueryList(sql, tran.Connection(), objects);
+		return selectList(tran, Sql.parse(sql, objects));
+	}
+
+	public <E> List<E> selectList(SqlTranction tran, Sql sql) throws SQLException {
+		return buildQueryList(tran.Connection(), sql);
 	}
 
 	/**
@@ -103,10 +123,14 @@ public abstract class AbstractSession {
 	 * @return 查询的单列集合
 	 */
 	public <E> List<E> selectList(String sql, Object... objects) {
+		return selectList(Sql.parse(sql, objects));
+	}
+
+	public <E> List<E> selectList(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildQueryList(sql, conn, objects);
+			return buildQueryList(conn, sql);
 		} catch (SQLException e) {
 			logger.error("获取查询结果失败 =>" + sql, e);
 			return null;
@@ -115,7 +139,7 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract <E> List<E> buildQueryList(String sql, Connection conn, Object... objects) throws SQLException;
+	protected abstract <E> List<E> buildQueryList(Connection conn, Sql sql) throws SQLException;
 
 	public <T> PageInfo<T> selectPage(Class<T> t, PageParamater paras, Object... objects) {
 		int pageSize = paras.getPageSize();
@@ -142,10 +166,14 @@ public abstract class AbstractSession {
 	 * @return 查询的键值对
 	 */
 	public <K, V> Map<K, V> selectMap(String sql, Object... objects) {
+		return selectMap(Sql.parse(sql, objects));
+	}
+
+	public <K, V> Map<K, V> selectMap(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildQueryMap(sql, conn, objects);
+			return buildQueryMap(conn, sql);
 		} catch (SQLException e) {
 			logger.error("Get map<k,v> faild =>" + sql, e);
 			return null;
@@ -155,14 +183,21 @@ public abstract class AbstractSession {
 	}
 
 	public <K, V> Map<K, V> selectMap(SqlTranction tran, String sql, Object... objects) throws SQLException {
-		return buildQueryMap(sql, tran.Connection(), objects);
+		return selectMap(tran, Sql.parse(sql, objects));
 	}
 
-	protected abstract <K, V> Map<K, V> buildQueryMap(String sql, Connection conn, Object... objects)
-			throws SQLException;
+	public <K, V> Map<K, V> selectMap(SqlTranction tran, Sql sql) throws SQLException {
+		return buildQueryMap(tran.Connection(), sql);
+	}
+
+	protected abstract <K, V> Map<K, V> buildQueryMap(Connection conn, Sql sql) throws SQLException;
 
 	public Object getSingle(SqlTranction tran, String sql, Object... objects) throws SQLException {
-		return buildGetSingle(sql, tran.Connection(), objects);
+		return getSingle(tran, Sql.parse(sql, objects));
+	}
+
+	public Object getSingle(SqlTranction tran, Sql sql) throws SQLException {
+		return buildGetSingle(tran.Connection(), sql);
 	}
 
 	/***
@@ -172,10 +207,14 @@ public abstract class AbstractSession {
 	 * @return 返回单个值
 	 */
 	public Object getSingle(String sql, Object... objects) {
+		return getSingle(Sql.parse(sql, objects));
+	}
+
+	public Object getSingle(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildGetSingle(sql, conn, objects);
+			return buildGetSingle(conn, sql);
 		} catch (SQLException e) {
 			logger.error("Get single faild =>" + sql, e);
 			return null;
@@ -184,10 +223,14 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract Object buildGetSingle(String sql, Connection conn, Object... objects) throws SQLException;
+	protected abstract Object buildGetSingle(Connection conn, Sql sql) throws SQLException;
 
 	public boolean execute(SqlTranction tran, String sql, Object... objects) throws SQLException {
-		return buildExecute(sql, tran.Connection(), objects);
+		return execute(tran, Sql.parse(sql, objects));
+	}
+
+	public boolean execute(SqlTranction tran, Sql sql) throws SQLException {
+		return buildExecute(tran.Connection(), sql);
 	}
 
 	/***
@@ -199,10 +242,14 @@ public abstract class AbstractSession {
 	 * @return boolean
 	 */
 	public boolean execute(String sql, Object... objects) {
+		return execute(Sql.parse(sql, objects));
+	}
+
+	public boolean execute(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildExecute(sql, conn, objects);
+			return buildExecute(conn, sql);
 		} catch (SQLException e) {
 			logger.error("Execute SQL faild => " + sql, e);
 			return false;
@@ -211,7 +258,7 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract boolean buildExecute(String sql, Connection conn, Object... objects) throws SQLException;
+	protected abstract boolean buildExecute(Connection conn, Sql sql) throws SQLException;
 
 	public boolean save(SqlTranction tran, Object obj) throws SQLException {
 		if (obj instanceof List)

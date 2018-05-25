@@ -21,6 +21,8 @@ public interface SqlSession
 	boolean callProcdure(String sql, List<ProcParamater> paras);
 
 	<T> List<T> selectList(Class<T> t, String sql, Object... objects);
+	
+	<T> List<T> selectListEx(Class<T> t, String sql, Object... objects);
 
 	<T> List<T> selectList(SqlTranction tran, Class<T> t, String sql, Object... objects) throws SQLException;
 

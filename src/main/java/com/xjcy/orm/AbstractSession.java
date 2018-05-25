@@ -20,6 +20,7 @@ import com.xjcy.orm.mapper.PageInfo;
 import com.xjcy.orm.mapper.PageParamater;
 import com.xjcy.orm.mapper.ProcParamater;
 import com.xjcy.orm.mapper.ProcParamater.ParameterType;
+import com.xjcy.util.StringUtils;
 import com.xjcy.orm.mapper.TableStruct;
 
 public abstract class AbstractSession {
@@ -52,6 +53,34 @@ public abstract class AbstractSession {
 	 */
 	public <T> List<T> selectList(Class<T> t, String sql, Object... objects) {
 		return selectList(t, Sql.parse(sql, objects));
+	}
+
+	/**
+	 * 查询列表 判断参数是否为null
+	 * 
+	 * @param t
+	 * @param sql
+	 * @param objects
+	 *            示例："name=?","张三","age=?",null
+	 * @return
+	 */
+	public <T> List<T> selectListEx(Class<T> t, String sql, Object... objects) {
+		String key = null;
+		List<Object> objs = new ArrayList<>();
+		for (int i = 0; i < objects.length; i++) {
+			if (i % 2 == 0) {
+				key = (String) objects[i];
+			} else {
+				if (objects[i] != null && StringUtils.isNotBlank(objects[i].toString())) {
+					if (sql.contains(" WHERE "))
+						sql += " AND " + key;
+					else
+						sql += " WHERE " + key;
+					objs.add(objects[i]);
+				}
+			}
+		}
+		return selectList(t, Sql.parse(sql, objs.toArray()));
 	}
 
 	public <T> List<T> selectList(Class<T> t, Sql sql) {

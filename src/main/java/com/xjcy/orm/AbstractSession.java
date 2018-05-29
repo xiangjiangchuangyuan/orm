@@ -61,26 +61,28 @@ public abstract class AbstractSession {
 	 * @param t
 	 * @param sql
 	 * @param objects
-	 *            示例："name=?","张三","age=?",null
+	 *            示例："name=?","张三","age like ?",null
 	 * @return
 	 */
 	public <T> List<T> selectListEx(Class<T> t, String sql, Object... objects) {
 		String key = null;
+		StringBuilder builder = new StringBuilder(sql);
 		List<Object> objs = new ArrayList<>();
 		for (int i = 0; i < objects.length; i++) {
 			if (i % 2 == 0) {
 				key = (String) objects[i];
 			} else {
 				if (objects[i] != null && StringUtils.isNotBlank(objects[i].toString())) {
-					if (sql.contains(" WHERE "))
-						sql += " AND " + key;
+					// 判断sql中是否有where关键字
+					if (builder.indexOf(" WHERE ") > -1)
+						builder.append(" AND ").append(key);
 					else
-						sql += " WHERE " + key;
+						builder.append(" WHERE ").append(key);
 					objs.add(objects[i]);
 				}
 			}
 		}
-		return selectList(t, Sql.parse(sql, objs.toArray()));
+		return selectList(t, Sql.parse(builder.toString(), objs.toArray()));
 	}
 
 	public <T> List<T> selectList(Class<T> t, Sql sql) {

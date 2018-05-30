@@ -29,7 +29,7 @@ public abstract class AbstractSession {
 	protected DataSource ds;
 
 	// 获取带事务的连接
-	public SqlTranction beginTranction() throws SQLException {
+	public SqlTranction beginTranction() throws Exception {
 		return new DefaultTranctionImpl(ds.getConnection());
 	}
 

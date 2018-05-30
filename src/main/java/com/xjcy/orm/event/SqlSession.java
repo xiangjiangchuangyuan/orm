@@ -10,7 +10,7 @@ import com.xjcy.orm.mapper.ProcParamater;
 
 public interface SqlSession
 {
-	SqlTranction beginTranction() throws SQLException;
+	SqlTranction beginTranction() throws Exception;
 
 	void close(SqlTranction tran);
 

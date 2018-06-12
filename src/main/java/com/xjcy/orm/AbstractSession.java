@@ -20,7 +20,6 @@ import com.xjcy.orm.mapper.PageInfo;
 import com.xjcy.orm.mapper.PageParamater;
 import com.xjcy.orm.mapper.ProcParamater;
 import com.xjcy.orm.mapper.ProcParamater.ParameterType;
-import com.xjcy.util.StringUtils;
 import com.xjcy.orm.mapper.TableStruct;
 
 public abstract class AbstractSession {
@@ -64,25 +63,8 @@ public abstract class AbstractSession {
 	 *            示例："name=?","张三","age like ?",null
 	 * @return
 	 */
-	public <T> List<T> selectListEx(Class<T> t, String sql, Object... objects) {
-		String key = null;
-		StringBuilder builder = new StringBuilder(sql);
-		List<Object> objs = new ArrayList<>();
-		for (int i = 0; i < objects.length; i++) {
-			if (i % 2 == 0) {
-				key = (String) objects[i];
-			} else {
-				if (objects[i] != null && StringUtils.isNotBlank(objects[i].toString())) {
-					// 判断sql中是否有where关键字
-					if (builder.indexOf(" WHERE ") > -1)
-						builder.append(" AND ").append(key);
-					else
-						builder.append(" WHERE ").append(key);
-					objs.add(objects[i]);
-				}
-			}
-		}
-		return selectList(t, Sql.parse(builder.toString(), objs.toArray()));
+	public <T> List<T> selectListEx(Class<T> t, String sql, String sql2, Object... objects) {
+		return selectList(t, Sql.check(sql, sql2, objects));
 	}
 
 	public <T> List<T> selectList(Class<T> t, Sql sql) {
@@ -173,20 +155,9 @@ public abstract class AbstractSession {
 	protected abstract <E> List<E> buildQueryList(Connection conn, Sql sql) throws SQLException;
 
 	public <T> PageInfo<T> selectPage(Class<T> t, PageParamater paras, Object... objects) {
-		int pageSize = paras.getPageSize();
-		PageInfo<T> page = new PageInfo<T>(paras.getPageNum(), pageSize);
-		if (ObjectUtils.isEmpty(objects)) {
-			page.setResult(selectList(t, paras.getSelectSql() + " LIMIT ?,?", page.getStartRow(), pageSize));
-			page.setTotal(Long.parseLong(getSingle(paras.getCountSql()).toString()));
-		} else {
-			Object[] newObj = new Object[objects.length + 2];
-			System.arraycopy(objects, 0, newObj, 0, objects.length);
-			// 赋值LIMIT参数
-			newObj[objects.length] = page.getStartRow();
-			newObj[objects.length + 1] = pageSize;
-			page.setResult(selectList(t, paras.getSelectSql() + " LIMIT ?,?", newObj));
-			page.setTotal(Long.parseLong(getSingle(paras.getCountSql(), objects).toString()));
-		}
+		PageInfo<T> page = new PageInfo<T>(paras.getPageNum(), paras.getPageSize());
+		page.setResult(selectList(t, paras.getSelectSql(objects, page.getStartRow())));
+		page.setTotal(Long.parseLong(getSingle(paras.getCountSql(objects)).toString()));
 		return page;
 	}
 

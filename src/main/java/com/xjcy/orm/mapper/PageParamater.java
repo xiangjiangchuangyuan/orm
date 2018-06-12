@@ -1,10 +1,11 @@
 package com.xjcy.orm.mapper;
 
 import com.xjcy.orm.event.Sql;
+import com.xjcy.util.ObjectUtils;
 
 public class PageParamater {
-	private String selectSql;
-	private String countSql;
+	private Sql selectSql;
+	private Sql countSql;
 	private int pageNum;
 	private int pageSize;
 
@@ -13,18 +14,23 @@ public class PageParamater {
 	}
 
 	public PageParamater(Sql selectSql, Sql countSql, int pageNum, int pageSize) {
-		this.selectSql = selectSql.toString();
-		this.countSql = countSql.toString();
+		this.selectSql = selectSql;
+		this.countSql = countSql;
 		this.pageNum = pageNum;
 		this.pageSize = pageSize;
 	}
 
-	public String getSelectSql() {
-		return selectSql;
+	public Sql getSelectSql(Object[] objects, int startRow) {
+		String sql = this.selectSql.toString() + " LIMIT ?,?";
+		Object[] temp = ObjectUtils.mergeArray(objects, new Object[] { startRow, pageSize });
+		Object[] newObj = this.selectSql.getData(temp);
+		return Sql.parse(sql, newObj);
 	}
 
-	public String getCountSql() {
-		return countSql;
+	public Sql getCountSql(Object[] objects) {
+		String sql = this.countSql.toString();
+		Object[] newObj = this.selectSql.getData(objects);
+		return Sql.parse(sql, newObj);
 	}
 
 	public int getPageNum() {

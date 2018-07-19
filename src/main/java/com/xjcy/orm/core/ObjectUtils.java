@@ -77,14 +77,16 @@ public class ObjectUtils {
 		if (logger.isDebugEnabled())
 			logger.debug("Build object map with metadata");
 		try {
-			String fieldName;
+			String fieldName, label, column;
 			for (Field field : fields) {
 				fieldName = field.getName();
 				for (int i = 1; i < metaData.getColumnCount() + 1; i++) {
-					if (fieldName.equals(metaData.getColumnLabel(i)) || fieldName.equals(metaData.getColumnName(i))
-							|| fieldName.equals(FieldUtils.ConvertName(metaData.getColumnLabel(i)))
-							|| fieldName.equals(FieldUtils.ConvertName(metaData.getColumnName(i)))) {
-						map.put(metaData.getColumnLabel(i), field);
+					label = metaData.getColumnLabel(i);
+					column = metaData.getColumnName(i);
+					if (fieldName.equals(label) || fieldName.equals(column)
+							|| fieldName.equals(FieldUtils.ConvertName(label))
+							|| fieldName.equals(FieldUtils.ConvertName(column))) {
+						map.put(label, field);
 						break;
 					}
 				}
@@ -95,23 +97,20 @@ public class ObjectUtils {
 		return map;
 	}
 
-	public static <T> T copyValue(ResultMap map, ResultSet rs, Class<T> t, ResultSetMetaData metaData) {
+	public static <T> T copyValue(ResultMap map, ResultSet rs, Class<T> t) {
 		try {
 			T tt = t.newInstance();
-			String colLabel;
-			Field field = null;
-			Object obj = null;
-			for (int i = 1; i <= metaData.getColumnCount(); i++) {
-				colLabel = metaData.getColumnLabel(i);
-				field = map.get(colLabel);
-				if (field != null) {
-					obj = rs.getObject(i);
-					if (obj != null && obj.toString().length() > 0) {
-						synchronized (LOCK_OBJ) {
-							field.setAccessible(true);
-							field.set(tt, FieldUtils.ConvertValue(field, t, obj));
-							field.setAccessible(false);
-						}
+			Set<String> keys = map.Keys();
+			Object obj;
+			Field field;
+			for (String label : keys) {
+				obj = rs.getObject(label);
+				if (obj != null) {
+					field = map.get(label);
+					synchronized (LOCK_OBJ) {
+						field.setAccessible(true);
+						field.set(tt, FieldUtils.ConvertValue(field, t, obj));
+						field.setAccessible(false);
 					}
 				}
 			}

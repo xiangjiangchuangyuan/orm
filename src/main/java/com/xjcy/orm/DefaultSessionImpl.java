@@ -3,7 +3,6 @@ package com.xjcy.orm;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +26,8 @@ import com.xjcy.orm.mapper.TableStruct.SQLType;
 public class DefaultSessionImpl extends AbstractSession implements SqlSession , RecordSession
 {
 	private static final Logger logger = Logger.getLogger(DefaultSessionImpl.class);
+	
+	private static final Object LOCK_OBJ = new Object();
 
 	public DefaultSessionImpl(DataSource ds)
 	{
@@ -41,31 +42,27 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
 		long start2 = getNow();
 		String cacheKey = t.getName() + "_" + sql;
-		ResultMap map = SqlCache.get(cacheKey);
-		if (map != null)
-		{
-			if (logger.isDebugEnabled())
-				logger.debug("Load map from cache => " + (getNow() - start2) + "ns");
+		ResultMap map;
+		synchronized (LOCK_OBJ) {
+			map = SqlCache.get(cacheKey);
+			if (map != null) {
+				if (logger.isDebugEnabled())
+					logger.debug("Load map from cache " + SqlCache.size() + " => " + (getNow() - start2) + "ns");
+			} else {
+				map = ObjectUtils.buildColumnMap(t, rs.getMetaData());
+				SqlCache.put(cacheKey, map);
+				if (logger.isDebugEnabled())
+					logger.debug("Load map from metadata => " + (getNow() - start2) + "ns");
+			}
 		}
-		else
-		{
-			map = ObjectUtils.buildColumnMap(t, rs.getMetaData());
-			SqlCache.put(cacheKey, map);
-			if (logger.isDebugEnabled())
-				logger.debug("Load map from metadata => " + (getNow() - start2) + "ns");
-		}
-		if (map.size() > 0)
-		{
-			ResultSetMetaData metaData = rs.getMetaData();
-			while (rs.next())
-			{
-				vos.add(ObjectUtils.copyValue(map, rs, t, metaData));
+		if (map.size() > 0) {
+			while (rs.next()) {
+				vos.add(ObjectUtils.copyValue(map, rs, t));
 			}
 		}
 		rs.getStatement().close();
 		rs.close();
-		if (logger.isDebugEnabled())
-		{
+		if (logger.isDebugEnabled()) {
 			logger.debug("SQL => " + sql);
 			logger.debug("Result rows => " + vos.size() + "; columns => " + map.size() + "; time => "
 					+ (getNow() - start) + "ns");

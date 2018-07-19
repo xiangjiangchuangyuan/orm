@@ -36,4 +36,8 @@ public class SqlCache
 		return entityMap.get(key);
 	}
 
+	public static int size() {
+		return buildMap.size();
+	}
+
 }

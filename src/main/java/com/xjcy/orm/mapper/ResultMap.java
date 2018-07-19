@@ -5,27 +5,28 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class ResultMap
-{
-	Map<String, Field> map = new HashMap<>();
-	public void put(String name, Field field)
-	{
-		map.put(name, field);
+/**
+ * 查询结果和对象字段的映射
+ * @author YYDF
+ *
+ */
+public class ResultMap {
+	final Map<String, Field> map = new HashMap<>();
+
+	public void put(String label, Field field) {
+		map.put(label, field);
 	}
 
-	public Set<String> keySet()
-	{
-		return map.keySet();
+	public Field get(String label) {
+		return map.get(label);
 	}
 
-	public Field get(String key)
-	{
-		return map.get(key);
-	}
-
-	public int size()
-	{
+	public int size() {
 		return map.size();
+	}
+
+	public Set<String> Keys() {
+		return map.keySet();
 	}
 
 }

@@ -24,16 +24,6 @@ public class ObjectUtils {
 	private static final Object LOCK_OBJ = new Object();
 	private static final Integer QUERY_TIMEOUT = 5;
 
-	public static boolean isEmpty(Object[] objects) {
-		if (objects == null)
-			return true;
-		if (objects.length == 0)
-			return true;
-		if (objects[0] == null)
-			return true;
-		return false;
-	}
-
 	public static CallableStatement buildStatement(Connection conn, String sql) throws SQLException {
 		return conn.prepareCall(sql);
 	}
@@ -54,12 +44,12 @@ public class ObjectUtils {
 	}
 
 	public static ResultSet buildResultSet(Connection conn, Sql sql) throws SQLException {
-		Object[] objects = sql.getData();
-		if (isEmpty(objects)) {
+		if (sql.noData()) {
 			Statement st = conn.createStatement();
 			st.setQueryTimeout(QUERY_TIMEOUT);
 			return st.executeQuery(sql.toString());
 		}
+		Object[] objects = sql.getData();
 		PreparedStatement ps = conn.prepareStatement(sql.toString());
 		for (int i = 1; i < objects.length + 1; i++) {
 			ps.setObject(i, objects[i - 1]);
@@ -123,14 +113,14 @@ public class ObjectUtils {
 
 	public static Integer executeUpdate(Connection conn, Sql sql) throws SQLException {
 		int num;
-		Object[] objects = sql.getData();
-		if (isEmpty(objects)) {
+		if (sql.noData()) {
 			Statement st = conn.createStatement();
 			st.setQueryTimeout(QUERY_TIMEOUT);
 			num = st.executeUpdate(sql.toString());
 			st.close();
 			return num;
 		}
+		Object[] objects = sql.getData();
 		PreparedStatement ps = conn.prepareStatement(sql.toString());
 		for (int i = 1; i < objects.length + 1; i++) {
 			ps.setObject(i, objects[i - 1]);

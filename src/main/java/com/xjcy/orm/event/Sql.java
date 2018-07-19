@@ -74,4 +74,14 @@ public class Sql {
 	public Object[] getData(Object[] objArray) {
 		return ObjectUtils.mergeArray(objects, objArray);
 	}
+
+	public boolean noData() {
+		if (this.objects == null)
+			return true;
+		if (this.objects.length == 0)
+			return true;
+		if (this.objects[0] == null)
+			return true;
+		return false;
+	}
 }

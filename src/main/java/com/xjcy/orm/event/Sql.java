@@ -14,7 +14,7 @@ public class Sql {
 	private String sql;
 	private Object[] objects;
 
-	public Sql(String sql, Object... objects) {
+	private Sql(String sql, Object... objects) {
 		this.sql = sql;
 		this.objects = objects;
 	}
@@ -66,8 +66,7 @@ public class Sql {
 		return this.objects;
 	}
 
-	@Override
-	public String toString() {
+	public String getSql() {
 		return this.sql;
 	}
 

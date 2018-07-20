@@ -21,6 +21,7 @@ import com.xjcy.orm.mapper.PageParamater;
 import com.xjcy.orm.mapper.ProcParamater;
 import com.xjcy.orm.mapper.ProcParamater.ParameterType;
 import com.xjcy.orm.mapper.TableStruct;
+import com.xjcy.orm.mapper.TableStruct.SQLType;
 
 public abstract class AbstractSession {
 	private static final Logger logger = Logger.getLogger(AbstractSession.class);
@@ -36,8 +37,9 @@ public abstract class AbstractSession {
 		return selectList(tran, t, Sql.parse(sql, objects));
 	}
 
+	@SuppressWarnings("unchecked")
 	public <T> List<T> selectList(SqlTranction tran, Class<T> t, Sql sql) throws SQLException {
-		return buildQuery(tran.Connection(), t, sql);
+		return (List<T>) doQuery(tran.Connection(), t, sql, Result.LIST);
 	}
 
 	/***
@@ -54,24 +56,12 @@ public abstract class AbstractSession {
 		return selectList(t, Sql.parse(sql, objects));
 	}
 
-	/**
-	 * 查询列表 判断参数是否为null
-	 * 
-	 * @param t
-	 * @param sql
-	 * @param objects
-	 *            示例："name=?","张三","age like ?",null
-	 * @return
-	 */
-	public <T> List<T> selectListEx(Class<T> t, String sql, String sql2, Object... objects) {
-		return selectList(t, Sql.check(sql, sql2, objects));
-	}
-
+	@SuppressWarnings("unchecked")
 	public <T> List<T> selectList(Class<T> t, Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildQuery(conn, t, sql);
+			return (List<T>) doQuery(conn, t, sql, Result.LIST);
 		} catch (SQLException e) {
 			logger.error("Get result faild => " + sql, e);
 			return null;
@@ -80,7 +70,7 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract <T> List<T> buildQuery(Connection conn, Class<T> t, Sql sql) throws SQLException;
+	protected abstract Object doQuery(Connection conn, Object o, Sql sql, Result result) throws SQLException;
 
 	/***
 	 * 
@@ -124,8 +114,9 @@ public abstract class AbstractSession {
 		return selectList(tran, Sql.parse(sql, objects));
 	}
 
+	@SuppressWarnings("unchecked")
 	public <E> List<E> selectList(SqlTranction tran, Sql sql) throws SQLException {
-		return buildQueryList(tran.Connection(), sql);
+		return (List<E>) doQuery(tran.Connection(), null, sql, Result.LIST);
 	}
 
 	/**
@@ -139,11 +130,12 @@ public abstract class AbstractSession {
 		return selectList(Sql.parse(sql, objects));
 	}
 
+	@SuppressWarnings("unchecked")
 	public <E> List<E> selectList(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildQueryList(conn, sql);
+			return (List<E>) doQuery(conn, null, sql, Result.LIST);
 		} catch (SQLException e) {
 			logger.error("获取查询结果失败 =>" + sql, e);
 			return null;
@@ -151,8 +143,6 @@ public abstract class AbstractSession {
 			close(conn);
 		}
 	}
-
-	protected abstract <E> List<E> buildQueryList(Connection conn, Sql sql) throws SQLException;
 
 	public <T> PageInfo<T> selectPage(Class<T> t, PageParamater paras, Object... objects) {
 		PageInfo<T> page = new PageInfo<T>(paras.getPageNum(), paras.getPageSize());
@@ -171,11 +161,12 @@ public abstract class AbstractSession {
 		return selectMap(Sql.parse(sql, objects));
 	}
 
+	@SuppressWarnings("unchecked")
 	public <K, V> Map<K, V> selectMap(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildQueryMap(conn, sql);
+			return (Map<K, V>) doQuery(conn, null, sql, Result.MAP);
 		} catch (SQLException e) {
 			logger.error("Get map<k,v> faild =>" + sql, e);
 			return null;
@@ -188,18 +179,17 @@ public abstract class AbstractSession {
 		return selectMap(tran, Sql.parse(sql, objects));
 	}
 
+	@SuppressWarnings("unchecked")
 	public <K, V> Map<K, V> selectMap(SqlTranction tran, Sql sql) throws SQLException {
-		return buildQueryMap(tran.Connection(), sql);
+		return (Map<K, V>) doQuery(tran.Connection(), null, sql, Result.MAP);
 	}
-
-	protected abstract <K, V> Map<K, V> buildQueryMap(Connection conn, Sql sql) throws SQLException;
 
 	public Object getSingle(SqlTranction tran, String sql, Object... objects) throws SQLException {
 		return getSingle(tran, Sql.parse(sql, objects));
 	}
 
 	public Object getSingle(SqlTranction tran, Sql sql) throws SQLException {
-		return buildGetSingle(tran.Connection(), sql);
+		return doQuery(tran.Connection(), null, sql, Result.SINGLE);
 	}
 
 	/***
@@ -216,7 +206,7 @@ public abstract class AbstractSession {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildGetSingle(conn, sql);
+			return doQuery(conn, null, sql, Result.SINGLE);
 		} catch (SQLException e) {
 			logger.error("Get single faild =>" + sql, e);
 			return null;
@@ -225,14 +215,12 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract Object buildGetSingle(Connection conn, Sql sql) throws SQLException;
-
 	public boolean execute(SqlTranction tran, String sql, Object... objects) throws SQLException {
 		return execute(tran, Sql.parse(sql, objects));
 	}
 
 	public boolean execute(SqlTranction tran, Sql sql) throws SQLException {
-		return buildExecute(tran.Connection(), sql);
+		return doExecute(tran.Connection(), null, sql);
 	}
 
 	/***
@@ -251,7 +239,7 @@ public abstract class AbstractSession {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildExecute(conn, sql);
+			return doExecute(conn, null, sql);
 		} catch (SQLException e) {
 			logger.error("Execute SQL faild => " + sql, e);
 			return false;
@@ -260,16 +248,15 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract boolean buildExecute(Connection conn, Sql sql) throws SQLException;
+	protected abstract boolean doExecute(Connection conn, TableStruct struct, Object obj) throws SQLException;
 
 	public boolean save(SqlTranction tran, Object obj) throws SQLException {
 		if (obj instanceof List)
 			throw new SQLException("不支持List对象的事务处理");
 		TableStruct struct = getEntity(obj.getClass());
-		return buildSave(tran.Connection(), struct, obj);
+		struct.setColumns(obj, SQLType.INSERT);
+		return doExecute(tran.Connection(), struct, obj);
 	}
-
-	protected abstract boolean buildSave(Connection conn, TableStruct struct, Object obj) throws SQLException;
 
 	public boolean save(Object obj) {
 		if (obj instanceof List)
@@ -281,25 +268,20 @@ public abstract class AbstractSession {
 	}
 
 	protected boolean saveList(List<?> objs) {
-		long start = getNow();
-		Connection conn = null;
+		SqlTranction tran = null;
 		try {
-			conn = ds.getConnection();
-			int num = 0;
+			tran = beginTranction();
 			for (Object obj : objs) {
-				buildSave(conn, getEntity(obj.getClass()), obj);
-				num++;
+				save(tran, obj);
 			}
-			if (logger.isDebugEnabled()) {
-				logger.debug("Finish, total => " + objs.size() + ", saved => " + num + ", Times => "
-						+ (getNow() - start) + "ns");
-			}
+			tran.commit();
 			return true;
-		} catch (SQLException e) {
+		} catch (Exception e) {
+			tran.rollback();
 			logger.error("Save object faild", e);
 			return false;
 		} finally {
-			close(conn);
+			close(tran);
 		}
 	}
 
@@ -307,7 +289,9 @@ public abstract class AbstractSession {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildUpdate(conn, getEntity(obj.getClass()), obj, false);
+			TableStruct struct = getEntity(obj.getClass());
+			struct.setColumns(obj, SQLType.UPDATE);
+			return doExecute(conn, struct, obj);
 		} catch (SQLException e) {
 			logger.error("Update object faild", e);
 			return false;
@@ -317,14 +301,18 @@ public abstract class AbstractSession {
 	}
 
 	public boolean update(SqlTranction tran, Object obj) throws SQLException {
-		return buildUpdate(tran.Connection(), getEntity(obj.getClass()), obj, false);
+		TableStruct struct = getEntity(obj.getClass());
+		struct.setColumns(obj, SQLType.UPDATE);
+		return doExecute(tran.Connection(), struct, obj);
 	}
 
 	public boolean updateNotNull(Object obj) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildUpdate(conn, getEntity(obj.getClass()), obj, true);
+			TableStruct struct = getEntity(obj.getClass());
+			struct.setColumns(obj, SQLType.UPDATENOTNULL);
+			return doExecute(conn, struct, obj);
 		} catch (SQLException e) {
 			logger.error("Update object faild", e);
 			return false;
@@ -334,17 +322,18 @@ public abstract class AbstractSession {
 	}
 
 	public boolean updateNotNull(SqlTranction tran, Object obj) throws SQLException {
-		return buildUpdate(tran.Connection(), getEntity(obj.getClass()), obj, true);
+		TableStruct struct = getEntity(obj.getClass());
+		struct.setColumns(obj, SQLType.UPDATENOTNULL);
+		return doExecute(tran.Connection(), struct, obj);
 	}
-
-	protected abstract boolean buildUpdate(Connection conn, TableStruct struct, Object obj, boolean notNull)
-			throws SQLException;
 
 	public boolean delete(Object obj) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return buildDelete(conn, getEntity(obj.getClass()), obj);
+			TableStruct struct = getEntity(obj.getClass());
+			struct.setColumns(obj, SQLType.DELETE);
+			return doExecute(conn, struct, obj);
 		} catch (SQLException e) {
 			logger.error("Delete object faild", e);
 			return false;
@@ -354,29 +343,31 @@ public abstract class AbstractSession {
 	}
 
 	public boolean delete(SqlTranction tran, Object obj) throws SQLException {
-		return buildDelete(tran.Connection(), getEntity(obj.getClass()), obj);
+		TableStruct struct = getEntity(obj.getClass());
+		struct.setColumns(obj, SQLType.DELETE);
+		return doExecute(tran.Connection(), struct, obj);
 	}
 
-	protected abstract boolean buildDelete(Connection conn, TableStruct struct, Object obj) throws SQLException;
-
 	public boolean saveOrUpdate(Object obj) {
-		Connection conn = null;
 		try {
-			conn = ds.getConnection();
-			return buildSaveOrUpdate(conn, getEntity(obj.getClass()), obj);
+			TableStruct struct = getEntity(obj.getClass());
+			if (struct.hasPrimaryKey(obj))
+				return updateNotNull(obj);
+			else
+				return save(obj);
 		} catch (SQLException e) {
-			logger.error("Delete object faild", e);
+			logger.error("Get entity faild", e);
 			return false;
-		} finally {
-			close(conn);
 		}
 	}
 
 	public boolean saveOrUpdate(SqlTranction tran, Object obj) throws SQLException {
-		return buildSaveOrUpdate(tran.Connection(), getEntity(obj.getClass()), obj);
+		TableStruct struct = getEntity(obj.getClass());
+		if (struct.hasPrimaryKey(obj))
+			return updateNotNull(tran, obj);
+		else
+			return save(tran, obj);
 	}
-
-	protected abstract boolean buildSaveOrUpdate(Connection conn, TableStruct struct, Object obj) throws SQLException;
 
 	/***
 	 * 执行存储过程
@@ -476,5 +467,9 @@ public abstract class AbstractSession {
 
 	protected static long getNow() {
 		return System.nanoTime();
+	}
+
+	protected enum Result {
+		LIST, MAP, SINGLE
 	}
 }

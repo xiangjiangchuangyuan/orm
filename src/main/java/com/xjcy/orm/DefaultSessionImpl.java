@@ -27,184 +27,64 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 {
 	private static final Logger logger = Logger.getLogger(DefaultSessionImpl.class);
 	
-	private static final Object LOCK_OBJ = new Object();
-
 	public DefaultSessionImpl(DataSource ds)
 	{
 		this.ds = ds;
 	}
 
 	@Override
-	protected <T> List<T> buildQuery(Connection conn, Class<T> t, Sql sql) throws SQLException
-	{
-		long start = getNow();
-		List<T> vos = new ArrayList<>();
+	protected Object doQuery(Connection conn, Object o, Sql sql, Result result) throws SQLException {
 		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
-		long start2 = getNow();
-		String cacheKey = t.getName() + "_" + sql;
-		ResultMap map;
-		synchronized (LOCK_OBJ) {
-			map = SqlCache.get(cacheKey);
-			if (map != null) {
-				if (logger.isDebugEnabled())
-					logger.debug("Load map from cache " + SqlCache.size() + " => " + (getNow() - start2) + "ns");
+		Object rtn = null;
+		if (result == Result.LIST) {
+			List<Object> vos = new ArrayList<>();
+			if (o == null) {
+				while (rs.next()) {
+					vos.add(rs.getObject(1));
+				}
 			} else {
-				map = ObjectUtils.buildColumnMap(t, rs.getMetaData());
-				SqlCache.put(cacheKey, map);
-				if (logger.isDebugEnabled())
-					logger.debug("Load map from metadata => " + (getNow() - start2) + "ns");
+				Class<?> oo = (Class<?>) o;
+				ResultMap map = SqlCache.get(oo, sql.getSql(), rs.getMetaData());
+				if (map.size() > 0) {
+					while (rs.next()) {
+						vos.add(ObjectUtils.copyValue(map, rs, oo));
+					}
+				}
 			}
+			rtn = vos;
 		}
-		if (map.size() > 0) {
+		if (result == Result.MAP) {
+			Map<Object, Object> map = new HashMap<>();
 			while (rs.next()) {
-				vos.add(ObjectUtils.copyValue(map, rs, t));
+				map.put(rs.getObject(1), rs.getObject(2));
 			}
+			rtn = map;
+		}
+		if (result == Result.SINGLE && rs.next()) {
+			rtn = rs.getObject(1);
 		}
 		rs.getStatement().close();
 		rs.close();
-		if (logger.isDebugEnabled()) {
-			logger.debug("SQL => " + sql);
-			logger.debug("Result rows => " + vos.size() + "; columns => " + map.size() + "; time => "
-					+ (getNow() - start) + "ns");
-		}
-		return vos;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	protected <E> List<E> buildQueryList(Connection conn, Sql sql) throws SQLException
-	{
-		long start = getNow();
-		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
-		List<E> dataList = new ArrayList<>();
-		while (rs.next())
-		{
-			dataList.add((E) rs.getObject(1));
-		}
-		rs.getStatement().close();
-		rs.close();
-		if (logger.isDebugEnabled())
-		{
-			logger.debug("SQL => " + sql);
-			logger.debug("Times => " + (getNow() - start) + "ns");
-		}
-		return dataList;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	protected <K, V> Map<K, V> buildQueryMap(Connection conn, Sql sql) throws SQLException
-	{
-		long start = getNow();
-		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
-		Map<K, V> map = new HashMap<>();
-		while (rs.next())
-		{
-			map.put((K)rs.getObject(1), (V)rs.getObject(2));
-		}
-		rs.getStatement().close();
-		rs.close();
-		if (logger.isDebugEnabled())
-		{
-			logger.debug("SQL => " + sql);
-			logger.debug("Map<K,V> => " + map.size() + "; Times => " + (getNow() - start) + "ns");
-		}
-		return map;
+		return rtn;
 	}
 
 	@Override
-	protected Object buildGetSingle(Connection conn, Sql sql) throws SQLException
-	{
-		long start = getNow();
-		Object obj = null;
-		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
-		if (rs.next())
-			obj = rs.getObject(1);
-		rs.getStatement().close();
-		rs.close();
-		if (logger.isDebugEnabled())
-		{
-			logger.debug("SQL => " + sql);
-			logger.debug("Result => " + obj + "; Times => " + (getNow() - start) + "ns");
+	protected boolean doExecute(Connection conn, TableStruct struct, Object obj) throws SQLException {
+		if (obj instanceof Sql) {
+			return ObjectUtils.executeUpdate(conn, (Sql) obj) > 0;
 		}
-		return obj;
-	}
-
-	@Override
-	protected boolean buildExecute(Connection conn, Sql sql) throws SQLException
-	{
-		long start = getNow();
-		Integer num = ObjectUtils.executeUpdate(conn, sql);
-		if (logger.isDebugEnabled())
-		{
-			logger.debug("SQL => " + sql);
-			logger.debug("Rows => " + num + ", Times => " + (getNow() - start) + "ns");
-		}
-		return true;
-	}
-
-	@Override
-	protected boolean buildSave(Connection conn, TableStruct struct, Object obj) throws SQLException
-	{
-		long start = getNow();
-		// 重新赋值Columns
-		struct.setColumns(obj, SQLType.INSERT);
-		Object result = null;
 		PreparedStatement ps = ObjectUtils.buildStatement(conn, struct);
-		if (ps.executeUpdate() > 0 && struct.hasGenerageKey())
+		if (ps.executeUpdate() > 0 && struct.hasGenerageKey() && struct.getSqlType() == SQLType.INSERT)
 		{
 			ResultSet rs = ps.getGeneratedKeys();
 			if (rs.next())
 			{
-				result = rs.getObject(1);
-				FieldUtils.setValue(obj, struct.getGenerageKey(), result);
+				logger.debug("id => " + rs.getObject(1));
+				FieldUtils.setValue(obj, struct.getGenerageKey(), rs.getObject(1));
 			}
 			rs.close();
 		}
 		ps.close();
-		if (logger.isDebugEnabled())
-			logger.debug("Saved, ID => " + result + ", Times => " + (getNow() - start) + "ns");
 		return true;
-	}
-
-	@Override
-	protected boolean buildUpdate(Connection conn, TableStruct struct, Object obj, boolean notNull) throws SQLException
-	{
-		long start = getNow();
-		struct.setColumns(obj, (notNull ? SQLType.UPDATENOTNULL : SQLType.UPDATE));
-		PreparedStatement ps = ObjectUtils.buildStatement(conn, struct);
-		Integer num = ps.executeUpdate();
-		ps.close();
-		if (logger.isDebugEnabled())
-			logger.debug("Updated, Rows => " + num + ", Times => " + (getNow() - start) + "ns");
-		return true;
-	}
-
-	@Override
-	protected boolean buildDelete(Connection conn, TableStruct struct, Object obj) throws SQLException
-	{
-		long start = getNow();
-		struct.setColumns(obj, SQLType.DELETE);
-		PreparedStatement ps = ObjectUtils.buildStatement(conn, struct);
-		Integer num = ps.executeUpdate();
-		ps.close();
-		if (logger.isDebugEnabled())
-			logger.debug("Deleted, Rows => " + num + ", Times => " + (getNow() - start) + "ns");
-		return true;
-	}
-
-	@Override
-	protected boolean buildSaveOrUpdate(Connection conn, TableStruct struct, Object obj) throws SQLException
-	{
-		if (struct.hasPrimaryKey(obj))
-		{
-			logger.debug("发现主键有值，定义为update");
-			return buildUpdate(conn, struct, obj, true);
-		}
-		else
-		{
-			logger.debug("没有发现主键的value，定义为insert");
-			return buildSave(conn, struct, obj);
-		}
 	}
 }

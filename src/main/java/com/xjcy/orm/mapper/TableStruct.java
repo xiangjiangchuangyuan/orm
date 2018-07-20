@@ -20,6 +20,7 @@ public class TableStruct {
 	private Map<String, Object> columnObjects;
 	private Map<Integer, Object> sqlMap = new HashMap<>();
 	private List<String> primaryKeys;
+	private SQLType sqlType;
 
 	public TableStruct(String name) {
 		this.name = name;
@@ -93,6 +94,11 @@ public class TableStruct {
 		default:
 			break;
 		}
+		this.sqlType = sqlType;
+	}
+
+	public SQLType getSqlType() {
+		return this.sqlType;
 	}
 
 	public Map<Integer, Object> getSqlMap() {

@@ -21,14 +21,14 @@ public class PageParamater {
 	}
 
 	public Sql getSelectSql(Object[] objects, int startRow) {
-		String sql = this.selectSql.toString() + " LIMIT ?,?";
+		String sql = this.selectSql.getSql() + " LIMIT ?,?";
 		Object[] temp = ObjectUtils.mergeArray(objects, new Object[] { startRow, pageSize });
 		Object[] newObj = this.selectSql.getData(temp);
 		return Sql.parse(sql, newObj);
 	}
 
 	public Sql getCountSql(Object[] objects) {
-		String sql = this.countSql.toString();
+		String sql = this.countSql.getSql();
 		Object[] newObj = this.selectSql.getData(objects);
 		return Sql.parse(sql, newObj);
 	}

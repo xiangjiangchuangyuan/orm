@@ -5,18 +5,17 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
 import com.xjcy.orm.event.Sql;
 import com.xjcy.orm.mapper.ResultMap;
 import com.xjcy.orm.mapper.TableStruct;
+import com.xjcy.orm.mapper.TableStruct.SQLType;
 
 public class ObjectUtils {
 	private static final Logger logger = Logger.getLogger(ObjectUtils.class);
@@ -32,13 +31,13 @@ public class ObjectUtils {
 		PreparedStatement ps;
 		Map<Integer, Object> sqlMap = struct.getSqlMap();
 		String sql = sqlMap.remove(0).toString();
-		if (struct.hasGenerageKey())
+		if (struct.hasGenerageKey() && struct.getSqlType() == SQLType.INSERT)
 			ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 		else
 			ps = conn.prepareStatement(sql);
-		Set<Entry<Integer, Object>> entries = sqlMap.entrySet();
-		for (Entry<Integer, Object> entry : entries) {
-			ps.setObject(entry.getKey(), entry.getValue());
+		Set<Integer> keys = sqlMap.keySet();
+		for (Integer index : keys) {
+			ps.setObject(index, sqlMap.get(index));
 		}
 		return ps;
 	}
@@ -47,10 +46,10 @@ public class ObjectUtils {
 		if (sql.noData()) {
 			Statement st = conn.createStatement();
 			st.setQueryTimeout(QUERY_TIMEOUT);
-			return st.executeQuery(sql.toString());
+			return st.executeQuery(sql.getSql());
 		}
 		Object[] objects = sql.getData();
-		PreparedStatement ps = conn.prepareStatement(sql.toString());
+		PreparedStatement ps = conn.prepareStatement(sql.getSql());
 		for (int i = 1; i < objects.length + 1; i++) {
 			ps.setObject(i, objects[i - 1]);
 		}
@@ -58,38 +57,9 @@ public class ObjectUtils {
 		return ps.executeQuery();
 	}
 
-	public static ResultMap buildColumnMap(Class<?> t, ResultSetMetaData metaData) {
-		Set<Field> fields = FieldUtils.getDeclaredFields(t);
-		ResultMap map = new ResultMap();
-		if (fields == null || fields.isEmpty()) {
-			return map;
-		}
-		if (logger.isDebugEnabled())
-			logger.debug("Build object map with metadata");
+	public static Object copyValue(ResultMap map, ResultSet rs, Class<?> t) {
 		try {
-			String fieldName, label, column;
-			for (Field field : fields) {
-				fieldName = field.getName();
-				for (int i = 1; i < metaData.getColumnCount() + 1; i++) {
-					label = metaData.getColumnLabel(i);
-					column = metaData.getColumnName(i);
-					if (fieldName.equals(label) || fieldName.equals(column)
-							|| fieldName.equals(FieldUtils.ConvertName(label))
-							|| fieldName.equals(FieldUtils.ConvertName(column))) {
-						map.put(label, field);
-						break;
-					}
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("获取对象和数据库的映射失败", e);
-		}
-		return map;
-	}
-
-	public static <T> T copyValue(ResultMap map, ResultSet rs, Class<T> t) {
-		try {
-			T tt = t.newInstance();
+			Object tt = t.newInstance();
 			Set<String> keys = map.Keys();
 			Object obj;
 			Field field;
@@ -111,17 +81,17 @@ public class ObjectUtils {
 		return null;
 	}
 
-	public static Integer executeUpdate(Connection conn, Sql sql) throws SQLException {
+	public static int executeUpdate(Connection conn, Sql sql) throws SQLException {
 		int num;
 		if (sql.noData()) {
 			Statement st = conn.createStatement();
 			st.setQueryTimeout(QUERY_TIMEOUT);
-			num = st.executeUpdate(sql.toString());
+			num = st.executeUpdate(sql.getSql());
 			st.close();
 			return num;
 		}
 		Object[] objects = sql.getData();
-		PreparedStatement ps = conn.prepareStatement(sql.toString());
+		PreparedStatement ps = conn.prepareStatement(sql.getSql());
 		for (int i = 1; i < objects.length + 1; i++) {
 			ps.setObject(i, objects[i - 1]);
 		}

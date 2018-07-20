@@ -1,6 +1,7 @@
 package com.xjcy.orm.event;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 public interface SqlTranction
 {
@@ -9,4 +10,6 @@ public interface SqlTranction
 	void commit();
 
 	void rollback();
+
+	void close() throws SQLException;
 }

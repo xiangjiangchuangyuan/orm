@@ -53,4 +53,13 @@ public class DefaultTranctionImpl implements SqlTranction
 	{
 		return this.connection;
 	}
+
+	@Override
+	public void close() throws SQLException {
+		if (!this.connection.getAutoCommit()) {
+			connection.setAutoCommit(true);
+			logger.debug("Set autocommit true on tranction close");
+		}
+		connection.close();
+	}
 }

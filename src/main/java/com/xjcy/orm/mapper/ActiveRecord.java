@@ -3,6 +3,7 @@ package com.xjcy.orm.mapper;
 import java.sql.SQLException;
 
 import com.xjcy.orm.event.RecordSession;
+import com.xjcy.orm.event.SqlSession;
 import com.xjcy.orm.event.SqlTranction;
 
 public class ActiveRecord {
@@ -20,7 +21,7 @@ public class ActiveRecord {
 		return sessionImpl.saveOrUpdate(tran, this);
 	}
 
-	public static void init(RecordSession sessionImpl) {
-		ActiveRecord.sessionImpl = sessionImpl;
+	public static void init(SqlSession session) {
+		ActiveRecord.sessionImpl = (RecordSession)session;
 	}
 }

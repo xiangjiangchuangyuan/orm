@@ -4,7 +4,6 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -262,9 +261,18 @@ public abstract class AbstractSession {
 		if (obj instanceof List)
 			return saveList((List<?>) obj);
 
-		List<Object> objs = new ArrayList<>();
-		objs.add(obj);
-		return saveList(objs);
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+			TableStruct struct = getEntity(obj.getClass());
+			struct.setColumns(obj, SQLType.INSERT);
+			return doExecute(conn, struct, obj);
+		} catch (Exception e) {
+			logger.error("Save object faild", e);
+			return false;
+		} finally {
+			close(conn);
+		}
 	}
 
 	protected boolean saveList(List<?> objs) {
@@ -447,12 +455,7 @@ public abstract class AbstractSession {
 
 	public void close(SqlTranction tran) {
 		try {
-			Connection conn = tran.Connection();
-			if (!conn.getAutoCommit()) {
-				logger.debug("Set autocommit true on tranction close");
-				conn.setAutoCommit(true);
-			}
-			close(conn);
+			tran.close();
 		} catch (SQLException e) {
 			logger.error("Tranction close faild", e);
 		}

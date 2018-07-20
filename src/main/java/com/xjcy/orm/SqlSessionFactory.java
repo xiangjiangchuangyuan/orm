@@ -18,7 +18,7 @@ public class SqlSessionFactory
 			DefaultSessionImpl defaultSession = new DefaultSessionImpl(ds);
 			SqlSessionProxy proxy = new SqlSessionProxy(defaultSession);
 			sessionImpl = proxy.getProxy();
-			ActiveRecord.init(defaultSession);
+			ActiveRecord.init(sessionImpl);
 			if (!StringUtils.isEmpty(entityPkg))
 				EntityUtils.cacheEntities(entityPkg);
 		}

@@ -247,14 +247,12 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract boolean doExecute(Connection conn, TableStruct struct, Object obj) throws SQLException;
+	protected abstract boolean doExecute(Connection conn, TableStruct struct, Sql sql) throws SQLException;
 
 	public boolean save(SqlTranction tran, Object obj) throws SQLException {
 		if (obj instanceof List)
 			throw new SQLException("不支持List对象的事务处理");
-		TableStruct struct = getEntity(obj.getClass());
-		struct.setColumns(obj, SQLType.INSERT);
-		return doExecute(tran.Connection(), struct, obj);
+		return doExecute(tran.Connection(), getEntity(obj, SQLType.INSERT), null);
 	}
 
 	public boolean save(Object obj) {
@@ -264,9 +262,7 @@ public abstract class AbstractSession {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			TableStruct struct = getEntity(obj.getClass());
-			struct.setColumns(obj, SQLType.INSERT);
-			return doExecute(conn, struct, obj);
+			return doExecute(conn, getEntity(obj, SQLType.INSERT), null);
 		} catch (Exception e) {
 			logger.error("Save object faild", e);
 			return false;
@@ -297,9 +293,7 @@ public abstract class AbstractSession {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			TableStruct struct = getEntity(obj.getClass());
-			struct.setColumns(obj, SQLType.UPDATE);
-			return doExecute(conn, struct, obj);
+			return doExecute(conn, getEntity(obj, SQLType.UPDATE), null);
 		} catch (SQLException e) {
 			logger.error("Update object faild", e);
 			return false;
@@ -309,18 +303,14 @@ public abstract class AbstractSession {
 	}
 
 	public boolean update(SqlTranction tran, Object obj) throws SQLException {
-		TableStruct struct = getEntity(obj.getClass());
-		struct.setColumns(obj, SQLType.UPDATE);
-		return doExecute(tran.Connection(), struct, obj);
+		return doExecute(tran.Connection(), getEntity(obj, SQLType.UPDATE), null);
 	}
 
 	public boolean updateNotNull(Object obj) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			TableStruct struct = getEntity(obj.getClass());
-			struct.setColumns(obj, SQLType.UPDATENOTNULL);
-			return doExecute(conn, struct, obj);
+			return doExecute(conn, getEntity(obj, SQLType.UPDATENOTNULL), null);
 		} catch (SQLException e) {
 			logger.error("Update object faild", e);
 			return false;
@@ -330,18 +320,14 @@ public abstract class AbstractSession {
 	}
 
 	public boolean updateNotNull(SqlTranction tran, Object obj) throws SQLException {
-		TableStruct struct = getEntity(obj.getClass());
-		struct.setColumns(obj, SQLType.UPDATENOTNULL);
-		return doExecute(tran.Connection(), struct, obj);
+		return doExecute(tran.Connection(), getEntity(obj, SQLType.UPDATENOTNULL), null);
 	}
 
 	public boolean delete(Object obj) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			TableStruct struct = getEntity(obj.getClass());
-			struct.setColumns(obj, SQLType.DELETE);
-			return doExecute(conn, struct, obj);
+			return doExecute(conn, getEntity(obj, SQLType.DELETE), null);
 		} catch (SQLException e) {
 			logger.error("Delete object faild", e);
 			return false;
@@ -351,30 +337,24 @@ public abstract class AbstractSession {
 	}
 
 	public boolean delete(SqlTranction tran, Object obj) throws SQLException {
-		TableStruct struct = getEntity(obj.getClass());
-		struct.setColumns(obj, SQLType.DELETE);
-		return doExecute(tran.Connection(), struct, obj);
+		return doExecute(tran.Connection(), getEntity(obj, SQLType.DELETE), null);
 	}
 
 	public boolean saveOrUpdate(Object obj) {
+		Connection conn = null;
 		try {
-			TableStruct struct = getEntity(obj.getClass());
-			if (struct.hasPrimaryKey(obj))
-				return updateNotNull(obj);
-			else
-				return save(obj);
+			conn = ds.getConnection();
+			return doExecute(conn, getEntity(obj, SQLType.SAVEORUPDATE), null);
 		} catch (SQLException e) {
 			logger.error("Get entity faild", e);
 			return false;
+		} finally{
+			close(conn);
 		}
 	}
 
 	public boolean saveOrUpdate(SqlTranction tran, Object obj) throws SQLException {
-		TableStruct struct = getEntity(obj.getClass());
-		if (struct.hasPrimaryKey(obj))
-			return updateNotNull(tran, obj);
-		else
-			return save(tran, obj);
+		return doExecute(tran.Connection(), getEntity(obj, SQLType.SAVEORUPDATE), null);
 	}
 
 	/***
@@ -398,7 +378,6 @@ public abstract class AbstractSession {
 	 * @return 执行结果
 	 */
 	public boolean callProcdure(String sql, List<ProcParamater> paras) {
-		long start = getNow();
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -430,10 +409,6 @@ public abstract class AbstractSession {
 				cs.execute();
 			}
 			cs.close();
-			if (logger.isDebugEnabled()) {
-				logger.debug("Procdure => " + sql);
-				logger.debug("Times => " + (getNow() - start) + "ns");
-			}
 			return true;
 		} catch (SQLException e) {
 			logger.error("Run procdure faild =>" + sql, e);
@@ -460,16 +435,17 @@ public abstract class AbstractSession {
 			logger.error("Tranction close faild", e);
 		}
 	}
-
-	private static TableStruct getEntity(Class<?> cla) throws SQLException {
+	
+	private static TableStruct getEntity(Object obj, SQLType sqlType) throws SQLException {
+		Class<?> cla = obj.getClass();
 		TableStruct struct = SqlCache.getEntity(cla.getName());
 		if (struct == null)
 			throw new SQLException("No annotations for '" + cla.getName() + "' were found");
+		if (sqlType == SQLType.SAVEORUPDATE) {
+			sqlType = struct.hasPrimaryKey(obj) ? SQLType.UPDATENOTNULL : SQLType.INSERT;
+		}
+		struct.setColumns(obj, sqlType);
 		return struct;
-	}
-
-	protected static long getNow() {
-		return System.nanoTime();
 	}
 
 	protected enum Result {

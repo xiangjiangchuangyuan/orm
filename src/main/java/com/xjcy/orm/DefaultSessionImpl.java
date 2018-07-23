@@ -13,7 +13,6 @@ import javax.sql.DataSource;
 
 import org.apache.log4j.Logger;
 
-import com.xjcy.orm.core.FieldUtils;
 import com.xjcy.orm.core.ObjectUtils;
 import com.xjcy.orm.core.SqlCache;
 import com.xjcy.orm.event.RecordSession;
@@ -69,18 +68,16 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession , 
 	}
 
 	@Override
-	protected boolean doExecute(Connection conn, TableStruct struct, Object obj) throws SQLException {
-		if (obj instanceof Sql) {
-			return ObjectUtils.executeUpdate(conn, (Sql) obj) > 0;
+	protected boolean doExecute(Connection conn, TableStruct struct, Sql sql) throws SQLException {
+		if (sql != null) {
+			return ObjectUtils.executeUpdate(conn, sql) > 0;
 		}
 		PreparedStatement ps = ObjectUtils.buildStatement(conn, struct);
-		if (ps.executeUpdate() > 0 && struct.hasGenerageKey() && struct.getSqlType() == SQLType.INSERT)
-		{
+		if (ps.executeUpdate() > 0 && struct.hasGenerageKey() && struct.getSqlType() == SQLType.INSERT) {
 			ResultSet rs = ps.getGeneratedKeys();
-			if (rs.next())
-			{
+			if (rs.next()) {
 				logger.debug("id => " + rs.getObject(1));
-				FieldUtils.setValue(obj, struct.getGenerageKey(), rs.getObject(1));
+				struct.setGenerateKey(rs.getObject(1));
 			}
 			rs.close();
 		}

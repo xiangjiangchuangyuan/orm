@@ -13,6 +13,10 @@ public class ActiveRecord {
 		return sessionImpl.save(this);
 	}
 
+	public boolean save(SqlTranction tran) throws SQLException {
+		return sessionImpl.save(tran, this);
+	}
+
 	public boolean saveOrUpdate() {
 		return sessionImpl.saveOrUpdate(this);
 	}

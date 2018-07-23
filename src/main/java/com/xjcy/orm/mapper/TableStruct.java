@@ -21,6 +21,7 @@ public class TableStruct {
 	private Map<Integer, Object> sqlMap = new HashMap<>();
 	private List<String> primaryKeys;
 	private SQLType sqlType;
+	private Object entity;
 
 	public TableStruct(String name) {
 		this.name = name;
@@ -50,6 +51,10 @@ public class TableStruct {
 		this.generateKey = column;
 	}
 
+	public void setGenerateKey(Object obj) {
+		FieldUtils.setValue(this.entity, this.generateKey, obj);
+	}
+
 	public boolean hasPrimaryKey(Object obj) {
 		if (primaryKeys == null || primaryKeys.isEmpty())
 			return false;
@@ -67,6 +72,8 @@ public class TableStruct {
 	public void setColumns(Object obj, SQLType sqlType) throws SQLException {
 		if (this.columnMethods == null || this.columnMethods.isEmpty())
 			return;
+		this.entity = obj;
+		this.sqlType = sqlType;
 		columnObjects = new HashMap<>();
 		Set<String> columnNames = this.columnMethods.keySet();
 		for (String colName : columnNames) {
@@ -94,7 +101,6 @@ public class TableStruct {
 		default:
 			break;
 		}
-		this.sqlType = sqlType;
 	}
 
 	public SQLType getSqlType() {

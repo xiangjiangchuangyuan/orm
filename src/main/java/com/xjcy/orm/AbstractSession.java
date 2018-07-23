@@ -4,6 +4,8 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +21,7 @@ import com.xjcy.orm.mapper.PageInfo;
 import com.xjcy.orm.mapper.PageParamater;
 import com.xjcy.orm.mapper.ProcParamater;
 import com.xjcy.orm.mapper.ProcParamater.ParameterType;
+import com.xjcy.orm.mapper.ResultHandler;
 import com.xjcy.orm.mapper.TableStruct;
 import com.xjcy.orm.mapper.TableStruct.SQLType;
 
@@ -36,9 +39,10 @@ public abstract class AbstractSession {
 		return selectList(tran, t, Sql.parse(sql, objects));
 	}
 
-	@SuppressWarnings("unchecked")
 	public <T> List<T> selectList(SqlTranction tran, Class<T> t, Sql sql) throws SQLException {
-		return (List<T>) doQuery(tran.Connection(), t, sql, Result.LIST);
+		List<T> vos = new ArrayList<>();
+		doQuery(tran.Connection(), sql, new ResultHandler(vos, t));
+		return vos;
 	}
 
 	/***
@@ -55,12 +59,13 @@ public abstract class AbstractSession {
 		return selectList(t, Sql.parse(sql, objects));
 	}
 
-	@SuppressWarnings("unchecked")
 	public <T> List<T> selectList(Class<T> t, Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return (List<T>) doQuery(conn, t, sql, Result.LIST);
+			List<T> vos = new ArrayList<>();
+			doQuery(conn, sql, new ResultHandler(vos, t));
+			return vos;
 		} catch (SQLException e) {
 			logger.error("Get result faild => " + sql, e);
 			return null;
@@ -69,7 +74,7 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract Object doQuery(Connection conn, Object o, Sql sql, Result result) throws SQLException;
+	protected abstract void doQuery(Connection conn, Sql sql, ResultHandler handler) throws SQLException;
 
 	/***
 	 * 
@@ -113,9 +118,10 @@ public abstract class AbstractSession {
 		return selectList(tran, Sql.parse(sql, objects));
 	}
 
-	@SuppressWarnings("unchecked")
 	public <E> List<E> selectList(SqlTranction tran, Sql sql) throws SQLException {
-		return (List<E>) doQuery(tran.Connection(), null, sql, Result.LIST);
+		List<E> list = new ArrayList<>();
+		doQuery(tran.Connection(), sql, new ResultHandler(list, null));
+		return list;
 	}
 
 	/**
@@ -129,12 +135,13 @@ public abstract class AbstractSession {
 		return selectList(Sql.parse(sql, objects));
 	}
 
-	@SuppressWarnings("unchecked")
 	public <E> List<E> selectList(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return (List<E>) doQuery(conn, null, sql, Result.LIST);
+			List<E> list = new ArrayList<>();
+			doQuery(conn, sql, new ResultHandler(list, null));
+			return list;
 		} catch (SQLException e) {
 			logger.error("获取查询结果失败 =>" + sql, e);
 			return null;
@@ -160,12 +167,13 @@ public abstract class AbstractSession {
 		return selectMap(Sql.parse(sql, objects));
 	}
 
-	@SuppressWarnings("unchecked")
 	public <K, V> Map<K, V> selectMap(Sql sql) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return (Map<K, V>) doQuery(conn, null, sql, Result.MAP);
+			Map<K, V> map = new HashMap<>();
+			doQuery(conn, sql, new ResultHandler(map));
+			return map;
 		} catch (SQLException e) {
 			logger.error("Get map<k,v> faild =>" + sql, e);
 			return null;
@@ -178,9 +186,10 @@ public abstract class AbstractSession {
 		return selectMap(tran, Sql.parse(sql, objects));
 	}
 
-	@SuppressWarnings("unchecked")
 	public <K, V> Map<K, V> selectMap(SqlTranction tran, Sql sql) throws SQLException {
-		return (Map<K, V>) doQuery(tran.Connection(), null, sql, Result.MAP);
+		Map<K, V> map = new HashMap<>();
+		doQuery(tran.Connection(), sql, new ResultHandler(map));
+		return map;
 	}
 
 	public Object getSingle(SqlTranction tran, String sql, Object... objects) throws SQLException {
@@ -188,7 +197,9 @@ public abstract class AbstractSession {
 	}
 
 	public Object getSingle(SqlTranction tran, Sql sql) throws SQLException {
-		return doQuery(tran.Connection(), null, sql, Result.SINGLE);
+		Object obj = null;
+		doQuery(tran.Connection(), sql, new ResultHandler(obj));
+		return obj;
 	}
 
 	/***
@@ -205,7 +216,9 @@ public abstract class AbstractSession {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return doQuery(conn, null, sql, Result.SINGLE);
+			Object obj = null;
+			doQuery(conn, sql, new ResultHandler(obj));
+			return obj;
 		} catch (SQLException e) {
 			logger.error("Get single faild =>" + sql, e);
 			return null;
@@ -348,7 +361,7 @@ public abstract class AbstractSession {
 		} catch (SQLException e) {
 			logger.error("Get entity faild", e);
 			return false;
-		} finally{
+		} finally {
 			close(conn);
 		}
 	}
@@ -435,7 +448,7 @@ public abstract class AbstractSession {
 			logger.error("Tranction close faild", e);
 		}
 	}
-	
+
 	private static TableStruct getEntity(Object obj, SQLType sqlType) throws SQLException {
 		Class<?> cla = obj.getClass();
 		TableStruct struct = SqlCache.getEntity(cla.getName());
@@ -446,9 +459,5 @@ public abstract class AbstractSession {
 		}
 		struct.setColumns(obj, sqlType);
 		return struct;
-	}
-
-	protected enum Result {
-		LIST, MAP, SINGLE
 	}
 }

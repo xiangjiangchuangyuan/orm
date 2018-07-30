@@ -9,6 +9,14 @@ import com.xjcy.orm.event.SqlTranction;
 public class ActiveRecord {
 	private static RecordSession sessionImpl;
 
+	public boolean update() {
+		return sessionImpl.update(this);
+	}
+
+	public boolean update(SqlTranction tran) throws SQLException {
+		return sessionImpl.update(tran, this);
+	}
+
 	public boolean save() {
 		return sessionImpl.save(this);
 	}

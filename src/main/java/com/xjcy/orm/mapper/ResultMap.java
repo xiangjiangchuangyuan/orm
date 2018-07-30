@@ -28,5 +28,4 @@ public class ResultMap {
 	public Set<String> Keys() {
 		return map.keySet();
 	}
-
 }

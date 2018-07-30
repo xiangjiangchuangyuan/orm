@@ -85,10 +85,15 @@ public class PageInfo<T>
 		return total;
 	}
 
-	public void setTotal(long total)
-	{
-		this.total = total;
-		this.setPages((int) Math.ceil(total / Double.parseDouble(pageSize + "")));
+	public void setTotal(Object total2) {
+		if (total2 == null){
+			this.total = 0;
+			this.pages = 0;
+		}
+		else {
+			this.total = Long.parseLong(total2.toString());
+			this.setPages((int) Math.ceil(total / Double.parseDouble(pageSize + "")));
+		}
 	}
 
 	@Override

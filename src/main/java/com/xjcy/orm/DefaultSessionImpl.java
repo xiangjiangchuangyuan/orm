@@ -27,7 +27,7 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession, R
 	@Override
 	protected void doQuery(Connection conn, Sql sql, ResultHandler handler) throws SQLException {
 		ResultSet rs = ObjectUtils.buildResultSet(conn, sql);
-		handler.data(rs, sql);
+		handler.data(rs, sql.getSql());
 		rs.close();
 	}
 

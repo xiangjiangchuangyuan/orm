@@ -1,19 +1,21 @@
 package com.xjcy.orm.mapper;
 
+import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import com.xjcy.orm.core.ObjectUtils;
+import com.xjcy.orm.core.FieldUtils;
 import com.xjcy.orm.core.SqlCache;
-import com.xjcy.orm.event.Sql;
 
 public class ResultHandler {
 	private static final Logger logger = Logger.getLogger(ResultHandler.class);
 
+	private static final Object LOCK_OBJ = new Object();
 	private List<Object> vos;
 	private Object obj;
 	private Map<Object, Object> map;
@@ -34,17 +36,17 @@ public class ResultHandler {
 		this.obj = obj2;
 	}
 
-	public void data(ResultSet rs, Sql sql) throws SQLException {
+	public void data(ResultSet rs, String sql) throws SQLException {
 		if (this.vos != null) {
 			if (o == null) {
 				while (rs.next()) {
 					this.vos.add(rs.getObject(1));
 				}
 			} else {
-				ResultMap map = SqlCache.get(o, sql.getSql(), rs.getMetaData());
-				if (map.size() > 0) {
+				ResultMap resultMap = SqlCache.get(o, sql, rs.getMetaData());
+				if (resultMap.size() > 0) {
 					while (rs.next()) {
-						this.vos.add(ObjectUtils.copyValue(map, rs, o));
+						this.vos.add(copyValue(resultMap, rs, o));
 					}
 				}
 			}
@@ -58,5 +60,29 @@ public class ResultHandler {
 				logger.debug("obj == " + obj);
 			}
 		}
+	}
+
+	private static Object copyValue(ResultMap map, ResultSet rs, Class<?> t) {
+		try {
+			Object tt = t.newInstance();
+			Set<String> keys = map.Keys();
+			Object obj;
+			Field field;
+			for (String label : keys) {
+				obj = rs.getObject(label);
+				if (obj != null) {
+					field = map.get(label);
+					synchronized (LOCK_OBJ) {
+						field.setAccessible(true);
+						field.set(tt, FieldUtils.ConvertValue(field, t, obj));
+						field.setAccessible(false);
+					}
+				}
+			}
+			return tt;
+		} catch (Exception e) {
+			logger.error("数据库对象转换失败,传入对象 => " + t.getName(), e);
+		}
+		return null;
 	}
 }

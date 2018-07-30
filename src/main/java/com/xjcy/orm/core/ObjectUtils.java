@@ -1,6 +1,5 @@
 package com.xjcy.orm.core;
 
-import java.lang.reflect.Field;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,17 +9,11 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
-
 import com.xjcy.orm.event.Sql;
-import com.xjcy.orm.mapper.ResultMap;
 import com.xjcy.orm.mapper.TableStruct;
 import com.xjcy.orm.mapper.TableStruct.SQLType;
 
 public class ObjectUtils {
-	private static final Logger logger = Logger.getLogger(ObjectUtils.class);
-
-	private static final Object LOCK_OBJ = new Object();
 	private static final Integer QUERY_TIMEOUT = 5;
 
 	public static CallableStatement buildStatement(Connection conn, String sql) throws SQLException {
@@ -55,30 +48,6 @@ public class ObjectUtils {
 		}
 		ps.setQueryTimeout(QUERY_TIMEOUT);
 		return ps.executeQuery();
-	}
-
-	public static Object copyValue(ResultMap map, ResultSet rs, Class<?> t) {
-		try {
-			Object tt = t.newInstance();
-			Set<String> keys = map.Keys();
-			Object obj;
-			Field field;
-			for (String label : keys) {
-				obj = rs.getObject(label);
-				if (obj != null) {
-					field = map.get(label);
-					synchronized (LOCK_OBJ) {
-						field.setAccessible(true);
-						field.set(tt, FieldUtils.ConvertValue(field, t, obj));
-						field.setAccessible(false);
-					}
-				}
-			}
-			return tt;
-		} catch (Exception e) {
-			logger.error("数据库对象转换失败,传入对象 => " + t.getName(), e);
-		}
-		return null;
 	}
 
 	public static int executeUpdate(Connection conn, Sql sql) throws SQLException {

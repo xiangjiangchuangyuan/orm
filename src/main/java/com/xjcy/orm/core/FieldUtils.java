@@ -15,6 +15,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import com.xjcy.orm.jpa.DateFormat;
+import com.xjcy.util.STR;
 
 public class FieldUtils
 {
@@ -89,10 +90,10 @@ public class FieldUtils
 		{
 			if (obj instanceof Timestamp)
 			{
-				String format = "yyyy-MM-dd HH:mm:ss";
+				String format = STR.DATE_LONG;
 				PropertyDescriptor pd = new PropertyDescriptor(field.getName(), t);
 				Method getMethod = pd.getReadMethod();// 获得get方法
-				if (pd != null)
+				if (getMethod != null)
 				{
 					DateFormat df = getMethod.getAnnotation(DateFormat.class);
 					if (df != null)

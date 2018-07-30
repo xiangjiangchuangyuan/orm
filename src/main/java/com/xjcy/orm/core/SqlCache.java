@@ -3,9 +3,9 @@ package com.xjcy.orm.core;
 import java.lang.reflect.Field;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
@@ -16,8 +16,8 @@ public class SqlCache
 {
 	private static final Logger logger = Logger.getLogger(SqlCache.class);
 	
-	private static final Map<String, ResultMap> buildMap = new ConcurrentHashMap<>();
-	private static final Map<String, TableStruct> entityMap = new ConcurrentHashMap<>();
+	private static final Map<String, ResultMap> buildMap = new HashMap<>();
+	private static final Map<String, TableStruct> entityMap = new HashMap<>();
 
 	public static boolean findEntity(String key)
 	{

@@ -153,7 +153,7 @@ public abstract class AbstractSession {
 	public <T> PageInfo<T> selectPage(Class<T> t, PageParamater paras, Object... objects) {
 		PageInfo<T> page = new PageInfo<T>(paras.getPageNum(), paras.getPageSize());
 		page.setResult(selectList(t, paras.getSelectSql(objects, page.getStartRow())));
-		page.setTotal(Long.parseLong(getSingle(paras.getCountSql(objects)).toString()));
+		page.setTotal(getSingle(paras.getCountSql(objects)));
 		return page;
 	}
 
@@ -170,8 +170,8 @@ public abstract class AbstractSession {
 	public <K, V> Map<K, V> selectMap(Sql sql) {
 		Connection conn = null;
 		try {
-			conn = ds.getConnection();
 			Map<K, V> map = new HashMap<>();
+			conn = ds.getConnection();
 			doQuery(conn, sql, new ResultHandler(map));
 			return map;
 		} catch (SQLException e) {

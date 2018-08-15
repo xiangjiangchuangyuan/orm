@@ -10,29 +10,12 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import com.xjcy.orm.mapper.ResultMap;
-import com.xjcy.orm.mapper.TableStruct;
 
 public class SqlCache
 {
 	private static final Logger logger = Logger.getLogger(SqlCache.class);
 	
 	private static final Map<String, ResultMap> buildMap = new HashMap<>();
-	private static final Map<String, TableStruct> entityMap = new HashMap<>();
-
-	public static boolean findEntity(String key)
-	{
-		return entityMap.containsKey(key);
-	}
-
-	public static void addEntity(String key, TableStruct struct)
-	{
-		entityMap.put(key, struct);
-	}
-
-	public static TableStruct getEntity(String key)
-	{
-		return entityMap.get(key);
-	}
 
 	public static int size() {
 		return buildMap.size();

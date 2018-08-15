@@ -1,7 +1,6 @@
 package com.xjcy.orm.core;
 
 import java.beans.IntrospectionException;
-import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -14,7 +13,6 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import com.xjcy.orm.jpa.DateFormat;
 import com.xjcy.util.STR;
 
 public class FieldUtils
@@ -90,16 +88,7 @@ public class FieldUtils
 		{
 			if (obj instanceof Timestamp)
 			{
-				String format = STR.DATE_LONG;
-				PropertyDescriptor pd = new PropertyDescriptor(field.getName(), t);
-				Method getMethod = pd.getReadMethod();// 获得get方法
-				if (getMethod != null)
-				{
-					DateFormat df = getMethod.getAnnotation(DateFormat.class);
-					if (df != null)
-						format = df.pattern();
-				}
-				return getDateFormat((Date) obj, format);
+				return getDateFormat((Date) obj, STR.DATE_LONG);
 			}
 			return obj.toString();
 		}
@@ -160,24 +149,5 @@ public class FieldUtils
 		return result;
 	}
 
-	public static void setValue(Object obj, String fieldName, Object result)
-	{
-		try
-		{
-			fieldName = ConvertName(fieldName);
-			Field field = obj.getClass().getDeclaredField(fieldName);
-			if (field != null)
-			{
-				field.setAccessible(true);
-				if (field.getGenericType() == Integer.class)
-					field.set(obj, Integer.parseInt(result.toString()));
-				else field.set(obj, result);
-				field.setAccessible(false);
-			}
-		}
-		catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
-		{
-			logger.error("PrimaryKey赋值失败", e);
-		}
-	}
+	
 }

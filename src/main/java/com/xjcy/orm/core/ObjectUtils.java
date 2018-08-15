@@ -9,9 +9,8 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Set;
 
+import com.xjcy.orm.entity.DbEntity;
 import com.xjcy.orm.event.Sql;
-import com.xjcy.orm.mapper.TableStruct;
-import com.xjcy.orm.mapper.TableStruct.SQLType;
 
 public class ObjectUtils {
 	private static final Integer QUERY_TIMEOUT = 5;
@@ -20,11 +19,11 @@ public class ObjectUtils {
 		return conn.prepareCall(sql);
 	}
 
-	public static PreparedStatement buildStatement(Connection conn, TableStruct struct) throws SQLException {
+	public static PreparedStatement buildStatement(Connection conn, DbEntity entity) throws SQLException {
 		PreparedStatement ps;
-		Map<Integer, Object> sqlMap = struct.getSqlMap();
+		Map<Integer, Object> sqlMap = entity.getSqlMap();
 		String sql = sqlMap.remove(0).toString();
-		if (struct.hasGenerageKey() && struct.getSqlType() == SQLType.INSERT)
+		if (entity.handleAutoGenerageId())
 			ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 		else
 			ps = conn.prepareStatement(sql);

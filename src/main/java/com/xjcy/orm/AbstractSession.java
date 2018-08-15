@@ -14,7 +14,8 @@ import javax.sql.DataSource;
 import org.apache.log4j.Logger;
 
 import com.xjcy.orm.core.ObjectUtils;
-import com.xjcy.orm.core.SqlCache;
+import com.xjcy.orm.entity.DbEntity;
+import com.xjcy.orm.entity.DbEntity.SQLType;
 import com.xjcy.orm.event.Sql;
 import com.xjcy.orm.event.SqlTranction;
 import com.xjcy.orm.mapper.PageInfo;
@@ -22,8 +23,6 @@ import com.xjcy.orm.mapper.PageParamater;
 import com.xjcy.orm.mapper.ProcParamater;
 import com.xjcy.orm.mapper.ProcParamater.ParameterType;
 import com.xjcy.orm.mapper.ResultHandler;
-import com.xjcy.orm.mapper.TableStruct;
-import com.xjcy.orm.mapper.TableStruct.SQLType;
 
 public abstract class AbstractSession {
 	private static final Logger logger = Logger.getLogger(AbstractSession.class);
@@ -260,22 +259,23 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected abstract boolean doExecute(Connection conn, TableStruct struct, Sql sql) throws SQLException;
+	protected abstract boolean doExecute(Connection conn, DbEntity entity, Sql sql) throws SQLException;
 
-	public boolean save(SqlTranction tran, Object obj) throws SQLException {
-		if (obj instanceof List)
+	public boolean save(SqlTranction tran, DbEntity entity) throws SQLException {
+		if (entity instanceof List)
 			throw new SQLException("不支持List对象的事务处理");
-		return doExecute(tran.Connection(), getEntity(obj, SQLType.INSERT), null);
+		return doExecute(tran.Connection(), getEntity(entity, SQLType.INSERT), null);
 	}
 
-	public boolean save(Object obj) {
-		if (obj instanceof List)
-			return saveList((List<?>) obj);
+	@SuppressWarnings("unchecked")
+	public boolean save(DbEntity entity) {
+		if (entity instanceof List)
+			return saveList((List<DbEntity>) entity);
 
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return doExecute(conn, getEntity(obj, SQLType.INSERT), null);
+			return doExecute(conn, getEntity(entity, SQLType.INSERT), null);
 		} catch (Exception e) {
 			logger.error("Save object faild", e);
 			return false;
@@ -284,12 +284,12 @@ public abstract class AbstractSession {
 		}
 	}
 
-	protected boolean saveList(List<?> objs) {
+	protected boolean saveList(List<DbEntity> objs) {
 		SqlTranction tran = null;
 		try {
 			tran = beginTranction();
-			for (Object obj : objs) {
-				save(tran, obj);
+			for (DbEntity entity : objs) {
+				save(tran, entity);
 			}
 			tran.commit();
 			return true;
@@ -302,11 +302,11 @@ public abstract class AbstractSession {
 		}
 	}
 
-	public boolean update(Object obj) {
+	public boolean update(DbEntity entity) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return doExecute(conn, getEntity(obj, SQLType.UPDATE), null);
+			return doExecute(conn, getEntity(entity, SQLType.UPDATE), null);
 		} catch (SQLException e) {
 			logger.error("Update object faild", e);
 			return false;
@@ -315,15 +315,15 @@ public abstract class AbstractSession {
 		}
 	}
 
-	public boolean update(SqlTranction tran, Object obj) throws SQLException {
-		return doExecute(tran.Connection(), getEntity(obj, SQLType.UPDATE), null);
+	public boolean update(SqlTranction tran, DbEntity entity) throws SQLException {
+		return doExecute(tran.Connection(), getEntity(entity, SQLType.UPDATE), null);
 	}
 
-	public boolean updateNotNull(Object obj) {
+	public boolean updateNotNull(DbEntity entity) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return doExecute(conn, getEntity(obj, SQLType.UPDATENOTNULL), null);
+			return doExecute(conn, getEntity(entity, SQLType.UPDATENOTNULL), null);
 		} catch (SQLException e) {
 			logger.error("Update object faild", e);
 			return false;
@@ -332,15 +332,15 @@ public abstract class AbstractSession {
 		}
 	}
 
-	public boolean updateNotNull(SqlTranction tran, Object obj) throws SQLException {
-		return doExecute(tran.Connection(), getEntity(obj, SQLType.UPDATENOTNULL), null);
+	public boolean updateNotNull(SqlTranction tran, DbEntity entity) throws SQLException {
+		return doExecute(tran.Connection(), getEntity(entity, SQLType.UPDATENOTNULL), null);
 	}
 
-	public boolean delete(Object obj) {
+	public boolean delete(DbEntity entity) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return doExecute(conn, getEntity(obj, SQLType.DELETE), null);
+			return doExecute(conn, getEntity(entity, SQLType.DELETE), null);
 		} catch (SQLException e) {
 			logger.error("Delete object faild", e);
 			return false;
@@ -349,15 +349,15 @@ public abstract class AbstractSession {
 		}
 	}
 
-	public boolean delete(SqlTranction tran, Object obj) throws SQLException {
-		return doExecute(tran.Connection(), getEntity(obj, SQLType.DELETE), null);
+	public boolean delete(SqlTranction tran, DbEntity entity) throws SQLException {
+		return doExecute(tran.Connection(), getEntity(entity, SQLType.DELETE), null);
 	}
 
-	public boolean saveOrUpdate(Object obj) {
+	public boolean saveOrUpdate(DbEntity entity) {
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
-			return doExecute(conn, getEntity(obj, SQLType.SAVEORUPDATE), null);
+			return doExecute(conn, getEntity(entity, SQLType.SAVEORUPDATE), null);
 		} catch (SQLException e) {
 			logger.error("Get entity faild", e);
 			return false;
@@ -366,8 +366,8 @@ public abstract class AbstractSession {
 		}
 	}
 
-	public boolean saveOrUpdate(SqlTranction tran, Object obj) throws SQLException {
-		return doExecute(tran.Connection(), getEntity(obj, SQLType.SAVEORUPDATE), null);
+	public boolean saveOrUpdate(SqlTranction tran, DbEntity entity) throws SQLException {
+		return doExecute(tran.Connection(), getEntity(entity, SQLType.SAVEORUPDATE), null);
 	}
 
 	/***
@@ -449,15 +449,13 @@ public abstract class AbstractSession {
 		}
 	}
 
-	private static TableStruct getEntity(Object obj, SQLType sqlType) throws SQLException {
-		Class<?> cla = obj.getClass();
-		TableStruct struct = SqlCache.getEntity(cla.getName());
-		if (struct == null)
-			throw new SQLException("No annotations for '" + cla.getName() + "' were found");
+	private static DbEntity getEntity(DbEntity entity, SQLType sqlType) throws SQLException {
+		if (entity == null)
+			throw new SQLException("The entity cannot be null");
 		if (sqlType == SQLType.SAVEORUPDATE) {
-			sqlType = struct.hasPrimaryKey(obj) ? SQLType.UPDATENOTNULL : SQLType.INSERT;
+			sqlType = entity.hasPrimaryKey() ? SQLType.UPDATENOTNULL : SQLType.INSERT;
 		}
-		struct.setColumns(obj, sqlType);
-		return struct;
+		entity.buildSqlMap(sqlType);
+		return entity;
 	}
 }

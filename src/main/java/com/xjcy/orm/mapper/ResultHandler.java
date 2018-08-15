@@ -34,6 +34,7 @@ public class ResultHandler {
 	}
 
 	public void data(ResultSet rs, String sql) throws SQLException {
+		logger.debug("Sql => " + sql);
 		if (this.vos != null) {
 			if (o == null) {
 				while (rs.next()) {

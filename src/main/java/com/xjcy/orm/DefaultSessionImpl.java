@@ -10,14 +10,13 @@ import javax.sql.DataSource;
 import org.apache.log4j.Logger;
 
 import com.xjcy.orm.core.ObjectUtils;
-import com.xjcy.orm.event.RecordSession;
+import com.xjcy.orm.entity.DbEntity;
+import com.xjcy.orm.entity.EntitySession;
 import com.xjcy.orm.event.Sql;
 import com.xjcy.orm.event.SqlSession;
 import com.xjcy.orm.mapper.ResultHandler;
-import com.xjcy.orm.mapper.TableStruct;
-import com.xjcy.orm.mapper.TableStruct.SQLType;
 
-public class DefaultSessionImpl extends AbstractSession implements SqlSession, RecordSession {
+public class DefaultSessionImpl extends AbstractSession implements SqlSession, EntitySession {
 	private static final Logger logger = Logger.getLogger(DefaultSessionImpl.class);
 
 	public DefaultSessionImpl(DataSource ds) {
@@ -32,16 +31,16 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession, R
 	}
 
 	@Override
-	protected boolean doExecute(Connection conn, TableStruct struct, Sql sql) throws SQLException {
+	protected boolean doExecute(Connection conn, DbEntity entity, Sql sql) throws SQLException {
 		if (sql != null) {
 			return ObjectUtils.executeUpdate(conn, sql) > 0;
 		}
-		PreparedStatement ps = ObjectUtils.buildStatement(conn, struct);
-		if (ps.executeUpdate() > 0 && struct.hasGenerageKey() && struct.getSqlType() == SQLType.INSERT) {
+		PreparedStatement ps = ObjectUtils.buildStatement(conn, entity);
+		if (ps.executeUpdate() > 0 && entity.handleAutoGenerageId()) {
 			ResultSet rs = ps.getGeneratedKeys();
 			if (rs.next()) {
-				logger.debug("id => " + rs.getObject(1));
-				struct.setGenerateKey(rs.getObject(1));
+				logger.debug("id => " + rs.getInt(1));
+				entity.setAutoGenerateIdValue(rs.getInt(1));
 			}
 			rs.close();
 		}

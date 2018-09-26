@@ -3,7 +3,6 @@ package com.xjcy.orm.entity;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -20,9 +19,9 @@ public abstract class DbEntity implements Serializable {
 	private static final Logger logger = Logger.getLogger(DbEntity.class);
 
 	protected String tableName;
-	protected boolean hasAutoGenerateId;
+	protected boolean hasAutoId;
 	protected String[] columns;
-	protected List<String> primaryKeys;
+	protected String[] primaryKeys;
 	private static EntitySession sessionImpl;
 	private Map<Integer, Object> sqlMap = new HashMap<>();
 	private SQLType sqlType;
@@ -59,7 +58,7 @@ public abstract class DbEntity implements Serializable {
 
 	public abstract Object getColumnValue(String name);
 
-	public abstract void setAutoGenerateIdValue(int val);
+	public abstract void setAutoId(int val);
 
 	public void buildSqlMap(SQLType sqlType) throws SQLException {
 		sqlMap.clear();
@@ -123,7 +122,7 @@ public abstract class DbEntity implements Serializable {
 				Object obj = null;
 				for (String key : columns) {
 					obj = getColumnValue(key);
-					if (!primaryKeys.contains(key) && obj != null) {
+					if (!contains(primaryKeys, key) && obj != null) {
 						sql1.append("`" + key + "`=?,");
 						sqlMap.put(j, obj);
 						j++;
@@ -131,7 +130,7 @@ public abstract class DbEntity implements Serializable {
 				}
 			} else {
 				for (String key : columns) {
-					if (!primaryKeys.contains(key)) {
+					if (!contains(primaryKeys, key)) {
 						sql1.append("`" + key + "`=?,");
 						sqlMap.put(j, getColumnValue(key));
 						j++;
@@ -140,7 +139,7 @@ public abstract class DbEntity implements Serializable {
 			}
 			sql1.deleteCharAt(sql1.length() - 1);
 			StringBuffer sql2 = new StringBuffer();
-			if (!primaryKeys.isEmpty()) {
+			if (!isEmpty(primaryKeys)) {
 				for (String key : primaryKeys) {
 					sql2.append("`" + key + "`=? AND ");
 					sqlMap.put(j, getColumnValue(key));
@@ -156,6 +155,20 @@ public abstract class DbEntity implements Serializable {
 		} catch (Exception e) {
 			logger.error("构造UPDATE语句失败", e);
 		}
+	}
+
+	private static boolean isEmpty(String[] array) {
+		return array == null || array.length == 0;
+	}
+
+	private static boolean contains(String[] array, String key) {
+		if (isEmpty(array))
+			return false;
+		for (String str : array) {
+			if (str.equals(key))
+				return true;
+		}
+		return false;
 	}
 
 	private void buildInsertMap() {
@@ -191,8 +204,8 @@ public abstract class DbEntity implements Serializable {
 		return this.sqlMap;
 	}
 
-	public boolean handleAutoGenerageId() {
-		return this.hasAutoGenerateId && this.sqlType == SQLType.INSERT;
+	public boolean handleAutoId() {
+		return this.hasAutoId && this.sqlType == SQLType.INSERT;
 	}
 
 	public enum SQLType {

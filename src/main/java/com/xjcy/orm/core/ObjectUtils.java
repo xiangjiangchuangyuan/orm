@@ -23,7 +23,7 @@ public class ObjectUtils {
 		PreparedStatement ps;
 		Map<Integer, Object> sqlMap = entity.getSqlMap();
 		String sql = sqlMap.remove(0).toString();
-		if (entity.handleAutoGenerageId())
+		if (entity.handleAutoId())
 			ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 		else
 			ps = conn.prepareStatement(sql);

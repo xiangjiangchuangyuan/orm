@@ -36,11 +36,11 @@ public class DefaultSessionImpl extends AbstractSession implements SqlSession, E
 			return ObjectUtils.executeUpdate(conn, sql) > 0;
 		}
 		PreparedStatement ps = ObjectUtils.buildStatement(conn, entity);
-		if (ps.executeUpdate() > 0 && entity.handleAutoGenerageId()) {
+		if (ps.executeUpdate() > 0 && entity.handleAutoId()) {
 			ResultSet rs = ps.getGeneratedKeys();
 			if (rs.next()) {
-				logger.debug("id => " + rs.getInt(1));
-				entity.setAutoGenerateIdValue(rs.getInt(1));
+				entity.setAutoId(rs.getInt(1));
+				logger.debug("Set auto id => " + rs.getInt(1));
 			}
 			rs.close();
 		}

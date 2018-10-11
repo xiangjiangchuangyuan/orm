@@ -36,6 +36,17 @@ public class JdbcUtils {
 			}
 	}
 
+	public static void closeTranction(Connection con) {
+		try {
+			if (!con.getAutoCommit()) 
+				con.setAutoCommit(true);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		closeConnection(con);
+	}
+
 	public static void bindArgs(PreparedStatement stmt, Object[] objs) throws SQLException {
 		if (objs != null && objs.length > 0) {
 			for (int i = 0; i < objs.length; i++) {

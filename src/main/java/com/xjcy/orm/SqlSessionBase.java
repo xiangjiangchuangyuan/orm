@@ -4,9 +4,11 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,13 +18,23 @@ import com.xjcy.orm.core.FieldUtils;
 import com.xjcy.orm.core.JdbcUtils;
 import com.xjcy.orm.mapper.ResultMapper;
 import com.xjcy.util.LoggerUtils;
+import com.xjcy.util.MD5;
 
 public abstract class SqlSessionBase {
 	private static final LoggerUtils logger = LoggerUtils.from(SqlSessionBase.class);
 	private final DataSource ds;
+	private final Map<String, Map<String, Field>> resultMappings = new HashMap<>();
 
 	public SqlSessionBase(DataSource dataSource) {
 		this.ds = dataSource;
+	}
+
+	public SqlTranction beginTranction() throws Exception {
+		return new SqlTranction(ds.getConnection());
+	}
+
+	public void close(SqlTranction tran) {
+		tran.close();
 	}
 
 	protected <T> T execute(ResultMapper<T> mapper) {
@@ -57,6 +69,16 @@ public abstract class SqlSessionBase {
 				JdbcUtils.closeConnection(con);
 			}
 		}
+	}
+
+	private <T> Map<String, Field> buildFiledMappings(Class<T> target, String sql, ResultSetMetaData metaData)
+			throws SQLException {
+		String key = MD5.encodeByMD5(target.getName() + "_" + sql);
+		if(resultMappings.containsKey(key))
+			return resultMappings.get(key);
+		Map<String, Field> mapping = JdbcUtils.buildFiledMappings(target, metaData);
+		resultMappings.put(key, mapping);
+		return mapping;
 	}
 
 	private void applySettings(PreparedStatement stmt) throws SQLException {
@@ -133,7 +155,7 @@ public abstract class SqlSessionBase {
 					t = (T) FieldUtils.toValue(target.getName(), rs.getObject(1));
 				else {
 					if (mappings == null)
-						mappings = JdbcUtils.buildFiledMappings(target, rs.getMetaData());
+						mappings = buildFiledMappings(target, sql, rs.getMetaData());
 					t = JdbcUtils.toBean(target, mappings, rs);
 				}
 				dataList.add(t);
@@ -183,7 +205,7 @@ public abstract class SqlSessionBase {
 				if (FieldUtils.isPrimitive(target))
 					t = (T) FieldUtils.toValue(target.getName(), rs.getObject(1));
 				else {
-					Map<String, Field> mappings = JdbcUtils.buildFiledMappings(target, rs.getMetaData());
+					Map<String, Field> mappings = buildFiledMappings(target, sql, rs.getMetaData());
 					t = JdbcUtils.toBean(target, mappings, rs);
 				}
 				break;

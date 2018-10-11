@@ -5,6 +5,8 @@ import java.sql.SQLException;
 
 import org.apache.log4j.Logger;
 
+import com.xjcy.orm.core.JdbcUtils;
+
 public class SqlTranction
 {
 
@@ -31,16 +33,17 @@ public class SqlTranction
 		}
 	}
 
-	public void rollback()
+	public void rollback(Exception e)
 	{
 		try
 		{
+			logger.error("Execute faild", e);
 			connection.rollback();
 			logger.debug("Tranction rollback");
 		}
-		catch (SQLException e)
+		catch (SQLException ee)
 		{
-			logger.error("Tranction rollback faild", e);
+			logger.error("Tranction rollback faild", ee);
 		}
 	}
 
@@ -49,11 +52,8 @@ public class SqlTranction
 		return this.connection;
 	}
 
-	public void close() throws SQLException {
-		if (!this.connection.getAutoCommit()) {
-			connection.setAutoCommit(true);
-			logger.debug("Set autocommit true on tranction close");
-		}
-		connection.close();
+	public void close() {
+		JdbcUtils.closeTranction(connection);
+		logger.debug("Tranction closed");
 	}
 }

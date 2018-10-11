@@ -1,5 +1,6 @@
 package com.xjcy.orm;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -18,6 +19,10 @@ public class SqlSession extends SqlSessionBase {
 		return execute(new queryResultMapper<>(target, sql, array));
 	}
 
+	public <T> List<T> selectList(SqlTranction tran, Class<T> target, String sql, Object... array) throws SQLException {
+		return execute(tran, new queryResultMapper<>(target, sql, array));
+	}
+
 	public <T> List<T> selectPage(Class<T> target, PageInfo pageInfo, String fetchSql, String countSql,
 			Object... array) {
 		pageInfo.setTotal(selectOne(Long.class, countSql, array));
@@ -30,10 +35,21 @@ public class SqlSession extends SqlSessionBase {
 		return execute(new singleResultMapper<>(target, sql, array));
 	}
 
+	public <T> T selectOne(SqlTranction tran, Class<T> target, String sql, Object... array) throws SQLException {
+		return execute(tran ,new singleResultMapper<>(target, sql, array));
+	}
+
 	public int insert(Object data) {
 		Entry<String, Object[]> entry = ScriptUtils.buildInsert(data);
 		if (entry != null)
 			return execute(entry.getKey(), entry.getValue());
+		return -1;
+	}
+
+	public int insert(SqlTranction tran, Object data) throws SQLException {
+		Entry<String, Object[]> entry = ScriptUtils.buildInsert(data);
+		if (entry != null)
+			return execute(tran, entry.getKey(), entry.getValue());
 		return -1;
 	}
 
@@ -44,7 +60,18 @@ public class SqlSession extends SqlSessionBase {
 		return -1;
 	}
 
+	public int update(SqlTranction tran, Object data) throws SQLException {
+		Entry<String, Object[]> entry = ScriptUtils.buildUpdate(data);
+		if (entry != null)
+			return execute(tran, entry.getKey(), entry.getValue());
+		return -1;
+	}
+
 	public int execute(final String sql, final Object... array) {
 		return execute(new defaultResultMapper(sql, array));
+	}
+	
+	public int execute(SqlTranction tran, final String sql, final Object... array) throws SQLException {
+		return execute(tran, new defaultResultMapper(sql, array));
 	}
 }

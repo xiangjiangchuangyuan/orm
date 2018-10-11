@@ -1,8 +1,6 @@
 package com.xjcy.orm.mapper;
 
-import java.util.List;
-
-public class PageInfo<T>
+public class PageInfo
 {
 	private int pageNum;
 	private int pageSize;
@@ -10,7 +8,6 @@ public class PageInfo<T>
 	private int endRow;
 	private long total;
 	private int pages;
-	private List<T> result;
 
 	public PageInfo(int pageNum, int pageSize)
 	{
@@ -18,16 +15,6 @@ public class PageInfo<T>
 		this.pageSize = pageSize;
 		this.startRow = pageNum > 0 ? (pageNum - 1) * pageSize : 0;
 		this.endRow = pageNum * pageSize;
-	}
-
-	public List<T> getResult()
-	{
-		return result;
-	}
-
-	public void setResult(List<T> result)
-	{
-		this.result = result;
 	}
 
 	public int getPages()
@@ -85,15 +72,9 @@ public class PageInfo<T>
 		return total;
 	}
 
-	public void setTotal(Object total2) {
-		if (total2 == null){
-			this.total = 0;
-			this.pages = 0;
-		}
-		else {
-			this.total = Long.parseLong(total2.toString());
-			this.setPages((int) Math.ceil(total / Double.parseDouble(pageSize + "")));
-		}
+	public void setTotal(Long total2) {
+		this.total = total2;
+		this.setPages((int) Math.ceil(total2 / Double.parseDouble(pageSize + "")));
 	}
 
 	@Override

@@ -5,22 +5,19 @@ import java.sql.SQLException;
 
 import org.apache.log4j.Logger;
 
-import com.xjcy.orm.event.SqlTranction;
-
-public class DefaultTranctionImpl implements SqlTranction
+public class SqlTranction
 {
 
-	private static final Logger logger = Logger.getLogger(DefaultTranctionImpl.class);
+	private static final Logger logger = Logger.getLogger(SqlTranction.class);
 	
 	private Connection connection;
 
-	public DefaultTranctionImpl(Connection conn) throws SQLException
+	public SqlTranction(Connection conn) throws SQLException
 	{
 		conn.setAutoCommit(false);
 		this.connection = conn;
 	}
 
-	@Override
 	public void commit()
 	{
 		try
@@ -34,7 +31,6 @@ public class DefaultTranctionImpl implements SqlTranction
 		}
 	}
 
-	@Override
 	public void rollback()
 	{
 		try
@@ -48,13 +44,11 @@ public class DefaultTranctionImpl implements SqlTranction
 		}
 	}
 
-	@Override
 	public Connection Connection()
 	{
 		return this.connection;
 	}
 
-	@Override
 	public void close() throws SQLException {
 		if (!this.connection.getAutoCommit()) {
 			connection.setAutoCommit(true);

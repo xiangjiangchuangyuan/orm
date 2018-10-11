@@ -1,153 +1,93 @@
 package com.xjcy.orm.core;
 
-import java.beans.IntrospectionException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-
-import org.apache.log4j.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.xjcy.util.STR;
 
-public class FieldUtils
-{
-	private static final Logger logger = Logger.getLogger(FieldUtils.class);
+public class FieldUtils {
+	private static final Pattern linePattern = Pattern.compile("_(\\w)");
+	private static final Map<String, String> convertedNames = new HashMap<>(1024);
+	private static final SimpleDateFormat sdf = new SimpleDateFormat(STR.DATE_LONG);
 
-	public static Set<Field> getDeclaredFields(Class<?> t)
-	{
+	public static Set<Field> getDeclaredFields(Class<?> t) {
 		Set<Field> fieldList = new HashSet<>();
 		getDeclaredFields(t, fieldList);
 		return fieldList;
 	}
 
-	private static void getDeclaredFields(Class<?> cla, Set<Field> fieldList)
-	{
-		if (cla != null)
-		{
+	private static void getDeclaredFields(Class<?> cla, Set<Field> fieldList) {
+		if (cla != null) {
 			Field[] fields = cla.getDeclaredFields();
-			for (Field field : fields)
-			{
+			for (Field field : fields) {
 				fieldList.add(field);
 			}
 			getDeclaredFields(cla.getSuperclass(), fieldList);
 		}
 	}
 
-	public static String ConvertName(String column)
-	{
-		column = column.toLowerCase();
-		String[] strs = column.split("_");
-		StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < strs.length; i++)
-		{
-			if (i == 0)
-			{
-				sb.append(strs[i]);
+	public synchronized static String convert(String str) {
+		String name;
+		if (convertedNames.containsKey(str))
+			name = convertedNames.get(str);
+		else {
+			name = str.toLowerCase();
+			Matcher matcher = linePattern.matcher(name);
+			StringBuffer sb = new StringBuffer();
+			while (matcher.find()) {
+				matcher.appendReplacement(sb, matcher.group(1).toUpperCase());
 			}
-			else
-			{
-				char[] c = strs[i].toCharArray();
-				for (int j = 0; j < c.length; j++)
-				{
-					if (j == 0)
-					{
-						sb.append((c[j] + "").toUpperCase());
-					}
-					else
-					{
-						sb.append(c[j]);
-					}
-				}
-			}
+			matcher.appendTail(sb);
+			name = sb.toString();
+			convertedNames.put(str, name);
 		}
-		return sb.toString();
+		return name;
 	}
 
-	public static Object ConvertValue(Field field, Class<?> t, Object obj) throws IntrospectionException
-	{
-		Type genericType = field.getGenericType();
-		if (field.getType().isEnum())
-		{
-			Object[] objs = field.getType().getEnumConstants();
-			if (obj instanceof Integer)
-				return objs[Integer.parseInt(obj.toString())];
-			for (Object e : objs)
-			{
-				if (e.toString().equals(obj.toString()))
-					return e;
-			}
-			return null;
-		}
-		if (genericType == String.class)
-		{
+	public static Object toValue(String targetType, Object obj) throws SQLException {
+		switch (targetType) {
+		case "java.lang.String":
 			if (obj instanceof Timestamp)
-			{
-				return getDateFormat((Date) obj, STR.DATE_LONG);
-			}
+				return sdf.format(obj);
 			return obj.toString();
-		}
-		if (genericType == Date.class)
-			return (Date) obj;
-		if (genericType == Integer.class)
+		case "java.lang.Integer":
 			return Integer.parseInt(obj.toString());
-		if (genericType == Double.class)
-			return Double.parseDouble(obj.toString());
-		if (genericType == Long.class)
+		case "java.lang.Long":
 			return Long.parseLong(obj.toString());
-		if (genericType == Float.class)
-			return Float.parseFloat(obj.toString());
-		if (genericType == char.class)
-			return obj.toString().charAt(0);
-		if (genericType == Boolean.class)
+		case "java.lang.Boolean":
 			return Boolean.parseBoolean(obj.toString());
-		return obj;
+		default:
+			throw new SQLException("This type '" + targetType + "' cannot be converted.");
+		}
 	}
 
-	private static String getDateFormat(Date date, String format)
-	{
-		return new SimpleDateFormat(format).format(date);
+	public static void setValue(Field field, Object obj, Object value) throws SQLException {
+		if (!field.isAccessible())
+			field.setAccessible(true);
+		try {
+			field.set(obj, toValue(field.getType().getName(), value));
+		} catch (IllegalArgumentException | IllegalAccessException | SQLException e) {
+			throw new SQLException("Assignment failed in '" + field.getName() + "' field.", e);
+		}
 	}
 
-	public static Object getValue(Object arg0, Method method)
-	{
-		Object obj = null;
-		try
-		{
-			obj = method.invoke(arg0);
-		}
-		catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
-		{
-			logger.error("获取entity的值失败", e);
-		}
-		if (obj != null && !"".equals(obj) && !"null".equals(obj))
-		{
-			return obj;
-		}
-		return obj;
-	}
+	static final List<String> PRIMITIVE_TYPE = Arrays.asList("java.lang.String", "java.lang.Long");
 
-	public static Object getValue(Object obj, String field)
-	{
-		Object result = null;
-		try
-		{
-			Field f = obj.getClass().getDeclaredField(ConvertName(field));
-			f.setAccessible(true);
-			result = f.get(obj);
-			f.setAccessible(false);
-		}
-		catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
-		{
-			logger.error("获取主键值失败", e);
-		}
-		return result;
+	public static boolean isPrimitive(Class<?> target) {
+		if (target.isPrimitive())
+			return true;
+		if (PRIMITIVE_TYPE.contains(target.getName()))
+			return true;
+		return false;
 	}
-
-	
 }

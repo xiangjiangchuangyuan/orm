@@ -16,6 +16,7 @@ import javax.sql.DataSource;
 
 import com.xjcy.orm.core.FieldUtils;
 import com.xjcy.orm.core.JdbcUtils;
+import com.xjcy.orm.core.Selector;
 import com.xjcy.orm.mapper.ResultMapper;
 import com.xjcy.util.LoggerUtils;
 import com.xjcy.util.MD5;
@@ -101,6 +102,11 @@ public abstract class SqlSessionBase {
 		private String sql;
 		private Object[] objs;
 
+		public defaultResultMapper(Selector selector) {
+			this.sql = selector.toString();
+			this.objs = selector.array();
+		}
+
 		public defaultResultMapper(String sql, Object[] array) {
 			this.sql = sql;
 			this.objs = array;
@@ -135,6 +141,12 @@ public abstract class SqlSessionBase {
 		private Object[] objs;
 		private String sql;
 		private Class<T> target;
+
+		public queryResultMapper(Class<T> target, Selector selector) {
+			this.sql = selector.toString();
+			this.objs = selector.array();
+			this.target = target;
+		}
 
 		public queryResultMapper(Class<T> target, String sql, Object[] array) {
 			this.sql = sql;
@@ -188,6 +200,12 @@ public abstract class SqlSessionBase {
 		private Object[] objs;
 		private Class<T> target;
 		private String sql;
+
+		public singleResultMapper(Class<T> target, Selector selector) {
+			this.objs = selector.array();
+			this.target = target;
+			this.sql = selector.toString();
+		}
 
 		public singleResultMapper(Class<T> target, String sql, Object[] array) {
 			this.objs = array;
